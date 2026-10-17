@@ -1,0 +1,1249 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Мэр на данных — квест Skill Route</title>
+<meta name="description" content="Квест для будущих продактов: управляйте городом Инсайтград и принимайте решения на основе данных.">
+<meta property="og:title" content="Мэр на данных — квест Skill Route">
+<meta property="og:description" content="24 месяца на посту мэра: метрики, воронки, A/B-тесты, RICE и выборы в финале.">
+<meta name="theme-color" content="#ffd21f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23ffd21f' stroke='%231e1b33' stroke-width='5'/%3E%3Cpath d='M20 44V30l6-5 6 5v14M32 44V22l8-6 8 6v22' fill='%23fff' stroke='%231e1b33' stroke-width='4' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;800&family=Rubik:wght@700;800;900&display=swap">
+<style>
+/* Comic-strip quest: sticky HUD + living cartoon city on top, chapters below as illustrated panels. */
+:root{
+  --ink:#1e1b33;--bg:#dff1ff;--paper:#fff;--muted:#56536e;
+  --sun:#ffd21f;--sun-soft:#fff3b8;--pink:#ff5fa8;--pink-soft:#ffe1ef;
+  --green:#22b87a;--green-soft:#d8f7e8;--red:#f04a3a;--red-soft:#ffe1dc;--blue:#3d8bff;--blue-soft:#dcebff;--violet:#8b6cff;
+  --f-display:'Rubik','Arial Black',system-ui,sans-serif;
+  --f-body:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --line:3px solid var(--ink);--shadow:5px 5px 0 var(--ink);--topH:250px;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font-family:var(--f-body);font-size:16px;line-height:1.55;font-weight:500;
+  background-image:radial-gradient(rgba(30,27,51,.06) 1.4px,transparent 1.5px);background-size:18px 18px;
+  padding-bottom:env(safe-area-inset-bottom,0px)}
+img,svg{max-width:100%}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+
+/* ---------- top ---------- */
+.top{position:sticky;top:0;z-index:20}
+@media (max-height:740px){.top{position:relative}}
+.hudBand{background:var(--sun);border-bottom:var(--line);padding-top:env(safe-area-inset-top,0px)}
+.hud{max-width:1000px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:9px max(16px,env(safe-area-inset-right,0px)) 9px max(16px,env(safe-area-inset-left,0px))}
+.brand{font-family:var(--f-display);font-weight:900;font-size:19px;line-height:1;letter-spacing:-.01em}
+.sr{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-display);font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);text-decoration:none;background:var(--paper);border:2px solid var(--ink);border-radius:999px;padding:3px 10px 3px 3px}
+.sr-mark{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--green);color:#fff;border:2px solid var(--ink);font-weight:900;font-size:8px}
+.spacer{flex:1}
+.pill{display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:2px solid var(--ink);border-radius:999px;padding:3px 10px;font-family:var(--f-display);font-weight:800;font-size:13px;box-shadow:2px 2px 0 var(--ink);white-space:nowrap}
+.pill svg{width:16px;height:16px}
+.lvl{display:inline-flex;flex-direction:column;gap:2px;min-width:118px}
+.lvl b{font-size:12px;line-height:1.1}
+.lvlbar{height:6px;border-radius:3px;background:#eee;border:1.5px solid var(--ink);overflow:hidden}
+.lvlbar i{display:block;height:100%;width:0;background:var(--green);transition:width .6s}
+.streak{background:#ffe4d1}
+.streak[data-n="0"]{opacity:.45}
+.stats{display:flex;gap:6px;flex-wrap:wrap;width:100%}
+.stat{position:relative;display:flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border:2px solid var(--ink);border-radius:999px;background:var(--paper);box-shadow:2px 2px 0 var(--ink)}
+.stat svg{width:22px;height:22px;flex:0 0 22px}
+.stat span{display:flex;flex-direction:column;line-height:1.05}
+.stat b{font-family:var(--f-display);font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+.stat small{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.stat.up{background:var(--green-soft)}.stat.down{background:var(--red-soft)}
+.fl{position:absolute;right:2px;top:-12px;font-family:var(--f-display);font-weight:900;font-size:13px;pointer-events:none;animation:fl 1.4s ease-out forwards;background:var(--paper);border:1.5px solid var(--ink);border-radius:6px;padding:0 4px}
+.fl.p{color:var(--green)}.fl.n{color:var(--red)}
+@keyframes fl{0%{opacity:1;transform:translateY(0) scale(.8)}20%{transform:translateY(-6px) scale(1.1)}100%{opacity:0;transform:translateY(-22px)}}
+
+.cityWrap{position:relative;height:200px;border-bottom:var(--line);overflow:hidden;background:#8fd3ff}
+@media (min-width:700px){.cityWrap{height:230px}}
+#city{display:block;width:100%;height:100%}
+.cityTag{position:absolute;left:max(14px,env(safe-area-inset-left,0px));top:10px;font-family:var(--f-display);font-size:12px;font-weight:800;background:var(--paper);border:2px solid var(--ink);border-radius:8px;padding:3px 9px;box-shadow:2px 2px 0 var(--ink)}
+.cityTag b{color:var(--pink)}
+.chapters{position:absolute;right:max(14px,env(safe-area-inset-right,0px));top:10px;display:flex;gap:3px;align-items:center;background:var(--paper);border:2px solid var(--ink);border-radius:999px;padding:5px 8px;box-shadow:2px 2px 0 var(--ink)}
+.chapters span{width:9px;height:9px;border-radius:50%;border:2px solid var(--ink);background:var(--paper);transition:background .3s,transform .3s}
+.chapters span.done{background:var(--green)}.chapters span.now{background:var(--sun);transform:scale(1.3)}
+
+/* ---------- stage ---------- */
+.stage{max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:18px;padding:26px max(16px,env(safe-area-inset-right,0px)) 110px max(16px,env(safe-area-inset-left,0px))}
+.stage>*{scroll-margin-top:calc(var(--topH) + 14px);scroll-margin-bottom:24px;animation:pop .35s cubic-bezier(.3,1.4,.6,1) both}
+@keyframes pop{from{opacity:.001;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+.eyebrow{display:inline-block;align-self:flex-start;font-family:var(--f-display);font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;background:var(--ink);color:var(--sun);padding:5px 10px;border-radius:6px}
+h1,h2,h3,h4{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.1}
+h1{font-size:clamp(40px,9vw,72px);font-weight:900;letter-spacing:-.02em}
+h1 mark{background:var(--sun);color:var(--ink);padding:0 .12em;border-radius:.12em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+h2{font-size:clamp(25px,5vw,34px);font-weight:900;letter-spacing:-.01em}
+h3{font-size:19px;font-weight:800}
+p{margin:0}
+.chHead{display:flex;flex-direction:column;gap:10px}
+.chHead .meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.month{font-family:var(--f-display);font-weight:800;font-size:12px;background:var(--paper);border:2px solid var(--ink);border-radius:6px;padding:3px 8px}
+
+.scene{border:var(--line);border-radius:20px;overflow:hidden;box-shadow:var(--shadow);background:#fff;line-height:0}
+.scene svg{width:100%;height:auto;display:block}
+
+/* dialog */
+.line{display:flex;gap:10px;align-items:flex-end}
+.ava{flex:0 0 64px;width:64px;height:64px;border-radius:50%;border:var(--line);background:#fff;overflow:hidden;box-shadow:3px 3px 0 var(--ink)}
+.ava svg{display:block;width:100%;height:100%}
+.bubble{position:relative;min-width:0;flex:1;background:var(--paper);border:var(--line);border-radius:20px;padding:11px 16px 13px;box-shadow:4px 4px 0 var(--ink);margin-bottom:8px}
+.bubble::before{content:"";position:absolute;left:-15px;bottom:14px;border:9px solid transparent;border-right:14px solid var(--ink);border-left:0}
+.bubble::after{content:"";position:absolute;left:-9px;bottom:17px;border:6px solid transparent;border-right:10px solid var(--paper);border-left:0}
+.who{font-family:var(--f-display);font-size:13px;font-weight:800;margin-bottom:2px;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline}
+.who em{font-style:normal;font-family:var(--f-body);font-weight:600;color:var(--muted);font-size:12.5px}
+.txt{font-size:17px;line-height:1.5;font-weight:500;max-width:62ch}
+.txt.typing::after{content:"▍";animation:blink .7s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.narr{background:var(--sun);border:var(--line);border-radius:6px;padding:10px 14px;box-shadow:4px 4px 0 var(--ink)}
+.narr .txt{font-weight:700;font-size:16px}
+.hintBox{background:var(--blue-soft);border:2.5px dashed var(--blue);border-radius:12px;padding:10px 14px;font-weight:600}
+.hintBox b{color:var(--blue)}
+
+/* buttons */
+.choices{display:flex;flex-direction:column;gap:10px}
+.choice{display:flex;gap:12px;align-items:center;text-align:left;width:100%;background:var(--paper);border:var(--line);border-radius:14px;padding:12px 14px;box-shadow:4px 4px 0 var(--ink);font-weight:600;transition:transform .1s,box-shadow .1s,background .2s}
+.choice:hover:not(:disabled){transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink);background:var(--sun-soft)}
+.choice:active:not(:disabled){transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.choice:disabled{cursor:default;opacity:.5;box-shadow:2px 2px 0 var(--ink)}
+.key{flex:0 0 32px;height:32px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-display);font-size:15px;font-weight:900;background:var(--sun);border:2.5px solid var(--ink)}
+.choice.picked{opacity:1}.choice.ok{background:var(--green-soft)}.choice.ok .key{background:var(--green);color:#fff}
+.choice.bad{background:var(--red-soft)}.choice.bad .key{background:var(--red);color:#fff}
+.choice.mid{background:var(--sun-soft)}.choice.right{opacity:1;border-style:dashed;background:var(--green-soft)}
+.btn{align-self:flex-start;background:var(--sun);border:var(--line);border-radius:12px;padding:10px 20px;font-family:var(--f-display);font-size:15px;font-weight:800;box-shadow:4px 4px 0 var(--ink);transition:transform .1s,box-shadow .1s;color:var(--ink);text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.btn:hover:not(:disabled){transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--ink)}
+.btn:active:not(:disabled){transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.btn:disabled{opacity:.45;cursor:default;box-shadow:2px 2px 0 var(--ink)}
+.btn.ghost{background:#fff;font-size:14px}.btn.pinkb{background:var(--pink);color:#fff}.btn.redb{background:var(--red);color:#fff}.btn.big{font-size:19px;padding:14px 26px;font-weight:900}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* feedback */
+.fb{border:var(--line);border-radius:18px;padding:18px;background:var(--paper);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px}
+.fbTop{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fb-tag{font-family:var(--f-display);font-size:15px;font-weight:900;letter-spacing:.02em;text-transform:uppercase;padding:5px 12px;border:2.5px solid var(--ink);border-radius:8px;transform:rotate(-2deg);box-shadow:2px 2px 0 var(--ink)}
+.fb.ok .fb-tag{background:var(--green);color:#fff}.fb.bad .fb-tag{background:var(--red);color:#fff}.fb.mid .fb-tag{background:var(--sun)}
+.xpTag{font-family:var(--f-display);font-weight:900;font-size:14px;color:var(--green)}
+.fb p{max-width:64ch}
+.lesson{position:relative;background:var(--sun-soft);border:2.5px solid var(--ink);border-radius:6px;padding:14px 14px 12px;display:flex;flex-direction:column;gap:4px;margin-top:4px}
+.lesson::before{content:"";position:absolute;top:-10px;left:50%;width:70px;height:18px;margin-left:-35px;background:rgba(255,95,168,.55);border:1.5px solid rgba(30,27,51,.35);transform:rotate(-3deg)}
+.lesson span{font-family:var(--f-display);font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#d23f86}
+.lesson p{font-size:16.5px;font-weight:600;line-height:1.45}
+
+/* panels */
+.panel{border:var(--line);border-radius:18px;padding:16px;background:var(--paper);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.cap,.panel-h small{font-size:13px;font-weight:600;color:var(--muted)}
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar{display:grid;grid-template-columns:minmax(80px,120px) 1fr 46px;gap:10px;align-items:center;font-weight:700;font-size:15px}
+.track{height:20px;border-radius:999px;background:#eef3f8;border:2.5px solid var(--ink);overflow:hidden}
+.fill{height:100%;width:0;background:var(--blue);transition:width 1s cubic-bezier(.3,1.3,.5,1)}
+.bar.hot .fill{background:var(--pink)}
+.v{font-family:var(--f-display);font-weight:800;font-size:15px;text-align:right;font-variant-numeric:tabular-nums}
+
+.funnel{display:flex;flex-direction:column;gap:4px}
+.fstep{display:flex;flex-direction:column;gap:4px;background:none;border:0;padding:5px;border-radius:12px;text-align:left;width:100%}
+.fstep:hover:not(:disabled){background:var(--sun-soft)}.fstep:disabled{cursor:default}
+.flabel{font-weight:700;font-size:15px;display:flex;justify-content:space-between;gap:8px}
+.flabel em{font-style:normal;font-family:var(--f-display);font-variant-numeric:tabular-nums}
+.ftrack{height:22px}.fbar{display:block;height:100%;width:0;border-radius:6px;background:var(--blue);border:2.5px solid var(--ink);transition:width .9s cubic-bezier(.3,1.3,.5,1)}
+.drop{font-size:14px;font-weight:700;color:var(--muted);padding-left:6px;height:0;overflow:hidden;transition:height .3s}
+.funnel.revealed .drop{height:22px}.drop.big{color:var(--red)}
+.fstep.ok{background:var(--green-soft)}.fstep.ok .fbar{background:var(--green)}.fstep.bad{background:var(--red-soft)}.fstep.bad .fbar{background:var(--red)}
+
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{border:2.5px solid var(--ink);background:var(--paper);border-radius:999px;padding:8px 14px;font-weight:700;font-size:15px;box-shadow:2px 2px 0 var(--ink);text-align:left}
+.chip[aria-pressed="true"]{background:var(--sun)}
+.chip.vanity{background:var(--pink-soft)}.chip.useful{background:var(--green-soft)}.chip.miss{outline:3px dashed var(--red);outline-offset:3px}
+.chip:disabled{cursor:default}
+
+/* interview */
+.residents{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.res{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;background:var(--paper);border:var(--line);border-radius:16px;padding:12px 8px;box-shadow:3px 3px 0 var(--ink)}
+.res .ava{flex:none}
+.res b{font-family:var(--f-display);font-size:14px}.res small{font-size:12px;color:var(--muted);font-weight:600;line-height:1.3}
+.qlist{display:flex;flex-direction:column;gap:8px}
+.q{display:flex;gap:10px;align-items:center;text-align:left;background:#fff;border:2.5px solid var(--ink);border-radius:12px;padding:10px 12px;font-weight:600;box-shadow:2px 2px 0 var(--ink)}
+.q[aria-pressed="true"]{background:var(--sun-soft)}
+.q .box{flex:0 0 22px;height:22px;border:2.5px solid var(--ink);border-radius:6px;display:grid;place-items:center;font-weight:900;font-size:13px;background:#fff}
+.q[aria-pressed="true"] .box{background:var(--green);color:#fff}
+.q:disabled{cursor:default}.q.goodq{background:var(--green-soft)}.q.badq{background:var(--red-soft)}
+.answers{display:flex;flex-direction:column;gap:10px}
+.qa{border:2.5px solid var(--ink);border-radius:14px;padding:12px;background:#fff;display:flex;flex-direction:column;gap:8px}
+.qa h4{font-size:15px}
+.ans{display:flex;gap:8px;align-items:flex-start;font-size:15px}
+.ans .mini{flex:0 0 34px;width:34px;height:34px;border-radius:50%;border:2px solid var(--ink);overflow:hidden}
+.ans .mini svg{width:100%;height:100%;display:block}
+.qv{align-self:flex-start;font-family:var(--f-display);font-weight:800;font-size:12px;padding:2px 8px;border-radius:6px;border:2px solid var(--ink)}
+.qv.g{background:var(--green);color:#fff}.qv.b{background:var(--red);color:#fff}.qv.m{background:var(--sun)}
+
+/* hypothesis builder */
+.slots{display:flex;flex-direction:column;gap:12px}
+.slot{display:flex;flex-direction:column;gap:6px}
+.slot>b{font-family:var(--f-display);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.slot .chips{gap:8px}.slot .chip{font-size:14px;padding:7px 12px}
+.preview{font-size:18px;font-weight:600;line-height:1.5;background:var(--sun-soft);border:2.5px solid var(--ink);border-radius:12px;padding:12px 14px}
+.preview span{background:#fff;border-bottom:3px solid var(--pink);padding:0 4px;border-radius:3px}
+.preview span.empty{color:var(--muted);border-bottom-style:dashed}
+
+/* lanes */
+.lanes{display:flex;flex-direction:column;gap:8px}
+.lane{position:relative;height:46px;border:2.5px solid var(--ink);border-radius:10px;background:#5c6074;overflow:hidden}
+.lane::after{content:"";position:absolute;left:0;right:0;top:50%;border-top:3px dashed var(--sun);opacity:.8}
+.lane label{position:absolute;left:8px;top:6px;z-index:2;font-family:var(--f-display);font-weight:800;font-size:11px;background:#fff;border:2px solid var(--ink);border-radius:6px;padding:1px 6px}
+.lane .bus{position:absolute;top:12px;left:-60px;width:52px;height:22px;z-index:1;animation:drive linear infinite}
+@keyframes drive{to{transform:translateX(calc(100vw + 120px))}}
+.lane .stopper{position:absolute;right:10px;top:5px;z-index:2;display:flex;gap:2px}
+.abc{width:100%;height:230px;display:block}
+.abmeta{display:flex;flex-wrap:wrap;gap:8px 18px;font-weight:700;font-size:14.5px;font-variant-numeric:tabular-nums}
+.abmeta b{font-family:var(--f-display)}
+.legend{display:inline-block;width:16px;height:6px;vertical-align:middle;margin-right:6px;border-radius:3px;border:1.5px solid var(--ink)}
+.peek{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--red-soft);border:2.5px solid var(--ink);border-radius:12px;padding:10px 12px}
+.peek b{font-family:var(--f-display)}
+
+/* newspaper */
+.paper{background:#fffdf5;border:var(--line);border-radius:4px;box-shadow:var(--shadow);padding:16px 18px 18px;display:flex;flex-direction:column;gap:10px;transform:rotate(-1deg);animation:spinIn .7s cubic-bezier(.3,1.3,.5,1) both}
+@keyframes spinIn{from{opacity:.001;transform:rotate(-200deg) scale(.2)}to{opacity:1;transform:rotate(-1deg) scale(1)}}
+.mast{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:3px double var(--ink);padding-bottom:6px;flex-wrap:wrap}
+.mast b{font-family:var(--f-display);font-weight:900;font-size:clamp(17px,4vw,22px);letter-spacing:.02em}
+.mast small{font-weight:700;font-size:12px;color:var(--muted)}
+.headline{font-family:var(--f-display);font-weight:900;font-size:clamp(22px,5vw,30px);line-height:1.1;text-wrap:balance}
+.paperBody{display:grid;grid-template-columns:110px 1fr;gap:14px;align-items:start}
+.paperBody svg{width:110px;height:auto;border:2.5px solid var(--ink);border-radius:6px;background:#fff}
+.paperBody p{font-size:15px;font-weight:500}
+@media (max-width:480px){.paperBody{grid-template-columns:1fr}.paperBody svg{width:100%;max-height:120px}}
+
+/* crisis */
+.phone{max-width:340px;align-self:center;width:100%;background:var(--ink);border-radius:30px;padding:12px;box-shadow:var(--shadow)}
+.screen{background:#f4f6fb;border-radius:20px;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:250px}
+.post{background:#fff;border:2px solid var(--ink);border-radius:12px;padding:8px 10px;font-size:14px;animation:pop .35s both}
+.post b{font-family:var(--f-display);font-size:13px}.post small{color:var(--muted);font-weight:600}
+.post .likes{font-size:12px;color:var(--red);font-weight:800}
+.timer{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:900;font-size:18px}
+.tbar{flex:1;height:16px;border:2.5px solid var(--ink);border-radius:999px;overflow:hidden;background:#fff}
+.tbar i{display:block;height:100%;width:100%;background:var(--red);transition:width 1s linear}
+
+/* districts */
+.mapWrap{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;align-items:start}
+@media (max-width:620px){.mapWrap{grid-template-columns:1fr}}
+.map svg{width:100%;height:auto;display:block;border:2.5px solid var(--ink);border-radius:14px;background:#bfe9a8}
+.map .d{cursor:pointer;transition:fill .4s}
+.map .d:hover{filter:brightness(1.08)}
+.dlist{display:flex;flex-direction:column;gap:8px}
+.dbtn{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fff;border:2.5px solid var(--ink);border-radius:12px;padding:8px 12px;font-weight:700;box-shadow:2px 2px 0 var(--ink);text-align:left}
+.dbtn em{font-style:normal;font-family:var(--f-display);font-weight:900}
+.dbtn.seen.low{background:var(--red-soft)}.dbtn.seen.hi{background:var(--green-soft)}.dbtn.seen.midd{background:var(--sun-soft)}
+
+/* RICE */
+.budget{display:flex;flex-direction:column;gap:6px}
+.btrack{height:22px;border-radius:999px;background:#eef3f8;overflow:hidden;border:2.5px solid var(--ink)}
+.bfill{height:100%;width:0;background:var(--green);transition:width .4s,background .3s}.bfill.over{background:var(--red)}
+.blabel{display:flex;justify-content:space-between;font-weight:700;font-size:14.5px;font-variant-numeric:tabular-nums;gap:10px}
+.projects{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:12px}
+.proj{text-align:left;background:var(--paper);border:var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;box-shadow:3px 3px 0 var(--ink);transition:transform .1s,box-shadow .1s,background .15s}
+.proj:hover:not(:disabled){transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--ink)}
+.proj[aria-pressed="true"]{background:var(--sun-soft)}
+.proj[aria-pressed="true"] h4::before{content:"✔ ";color:var(--green)}
+.proj:disabled{cursor:default}
+.proj h4{font-size:15px;font-weight:800;line-height:1.2}.proj .d{font-size:13.5px;color:var(--muted);font-weight:600}
+.rice{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.rice div{background:#eef3f8;border:1.5px solid var(--ink);border-radius:7px;padding:3px 2px;text-align:center}
+.rice small{display:block;font-size:9.5px;font-weight:700;color:var(--muted)}.rice b{font-family:var(--f-display);font-size:13px;font-variant-numeric:tabular-nums}
+.pfoot{display:flex;justify-content:space-between;align-items:center;font-family:var(--f-display);font-weight:800;font-size:14px}
+.score{color:var(--muted)}.score.shown{color:#fff;background:var(--pink);border:2px solid var(--ink);border-radius:6px;padding:1px 7px}
+.formula{font-family:var(--f-display);font-weight:800;font-size:15px;background:var(--sun-soft);border:2.5px solid var(--ink);border-radius:10px;padding:10px 12px;line-height:1.35}
+
+/* chart toggle */
+.toggle{display:inline-flex;border:2.5px solid var(--ink);border-radius:999px;overflow:hidden;align-self:flex-start}
+.toggle button{border:0;background:#fff;padding:6px 14px;font-weight:700;font-size:14px}
+.toggle button[aria-pressed="true"]{background:var(--ink);color:#fff}
+
+/* election */
+.race{display:flex;flex-direction:column;gap:12px}
+.cand{display:grid;grid-template-columns:52px 1fr 60px;gap:10px;align-items:center}
+.cand .ava{width:52px;height:52px;flex:none}
+.cand .tr{height:30px;border:var(--line);border-radius:999px;background:#eef3f8;overflow:hidden}
+.cand .tr i{display:block;height:100%;width:0;transition:width .8s cubic-bezier(.3,1.2,.5,1)}
+.cand b{font-family:var(--f-display);font-size:20px;font-weight:900;text-align:right;font-variant-numeric:tabular-nums}
+.cand small{display:block;font-weight:700;font-size:13px;margin-bottom:3px}
+
+/* final */
+.final{display:flex;flex-direction:column;gap:20px}
+.ending{border:var(--line);border-radius:22px;box-shadow:var(--shadow);overflow:hidden;background:var(--sun)}
+.ending .scene{border:0;border-radius:0;box-shadow:none;border-bottom:var(--line)}
+.ending .inner{padding:18px 20px;display:flex;flex-direction:column;gap:8px}
+.ending h2{font-size:clamp(28px,6vw,44px)}
+.ending p{font-weight:600;max-width:60ch}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.cmp{border:var(--line);border-radius:14px;padding:12px;background:var(--paper);box-shadow:3px 3px 0 var(--ink)}
+.cmp small{font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.cmp div{font-weight:700;font-size:14px;margin-top:2px;font-variant-numeric:tabular-nums}.cmp div b{font-family:var(--f-display);font-size:21px}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.badge{display:flex;gap:10px;align-items:center;background:#fff;border:2.5px solid var(--ink);border-radius:14px;padding:8px 10px;box-shadow:2px 2px 0 var(--ink)}
+.badge svg{width:40px;height:40px;flex:0 0 40px}
+.badge b{font-family:var(--f-display);font-size:13.5px;line-height:1.15}.badge small{display:block;font-size:11.5px;color:var(--muted);font-weight:600;line-height:1.25}
+.badge.locked{opacity:.4;filter:grayscale(1);box-shadow:none}
+.lessons{display:flex;flex-direction:column;border:var(--line);border-radius:16px;overflow:hidden;background:var(--paper);box-shadow:var(--shadow)}
+.lessons div{padding:12px 14px;border-top:2px dashed rgba(30,27,51,.2);display:grid;grid-template-columns:120px 1fr;gap:12px;font-size:15px;font-weight:500}
+.lessons div:first-child{border-top:0}
+.lessons small{font-family:var(--f-display);font-size:11.5px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:#d23f86;padding-top:3px}
+.cta-sr{border:var(--line);border-radius:20px;padding:20px;background:var(--green);color:#fff;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px}
+.cta-sr .eyebrow{background:#fff;color:var(--ink)}
+.cta-sr h3{font-size:clamp(21px,4vw,27px);font-weight:900}
+.cta-sr p{max-width:60ch;font-weight:600}
+.foot{display:flex;justify-content:center;padding-top:6px}
+
+/* intro */
+.intro{display:flex;flex-direction:column;gap:20px}
+.lede{font-size:18px;max-width:60ch;background:var(--paper);border:var(--line);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow)}
+.lede strong{background:var(--sun-soft);padding:0 3px;border-radius:3px}
+.feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.feat{background:#fff;border:2.5px solid var(--ink);border-radius:14px;padding:10px 12px;display:flex;gap:10px;align-items:center;font-weight:700;font-size:14px;line-height:1.3}
+.feat svg{width:30px;height:30px;flex:0 0 30px}
+.avatars{display:flex;gap:12px;flex-wrap:wrap}
+.avbtn{width:76px;height:76px;border-radius:50%;border:var(--line);padding:0;overflow:hidden;background:#fff;box-shadow:3px 3px 0 var(--ink);transition:transform .1s}
+.avbtn svg{width:100%;height:100%;display:block}
+.avbtn[aria-pressed="true"]{outline:4px solid var(--pink);outline-offset:3px;transform:scale(1.06)}
+.field{display:flex;flex-direction:column;gap:6px;max-width:340px}
+.field label{font-family:var(--f-display);font-weight:800;font-size:14px}
+.field input{font:inherit;font-weight:600;font-size:17px;border:var(--line);border-radius:12px;padding:10px 14px;box-shadow:3px 3px 0 var(--ink);background:#fff;color:var(--ink)}
+.best{font-weight:700;color:var(--muted)}
+
+/* toasts */
+.toasts{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:50;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:min(92vw,420px)}
+.toast{display:flex;gap:10px;align-items:center;background:#fff;border:var(--line);border-radius:16px;padding:10px 14px;box-shadow:var(--shadow);animation:toastIn .5s cubic-bezier(.3,1.5,.5,1) both;width:100%}
+.toast.out{animation:toastOut .4s ease-in forwards}
+.toast svg{width:42px;height:42px;flex:0 0 42px}
+.toast b{font-family:var(--f-display);font-size:15px}.toast small{display:block;font-size:12.5px;color:var(--muted);font-weight:600}
+.toast.lvlup{background:var(--sun)}
+@keyframes toastIn{from{opacity:0;transform:translateY(30px) scale(.8)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(20px)}}
+
+@media (max-width:540px){
+  .lessons div{grid-template-columns:1fr;gap:2px}
+  .bar{grid-template-columns:86px 1fr 40px}
+  .ava{flex-basis:52px;width:52px;height:52px}
+  .txt{font-size:16px}
+  .stat small{display:none}
+  .stat{padding:2px 7px 2px 3px;gap:4px}
+  .stat svg{width:18px;height:18px;flex-basis:18px}
+  .stat b{font-size:12.5px}
+  .stats{gap:5px;justify-content:space-between}
+  .hud{gap:6px 8px;padding-block:7px}
+  .brand{font-size:16px}
+  .sr span.t{display:none}.sr{padding:2px}
+  .lvl{min-width:96px}.pill{font-size:12px;padding:3px 8px}
+  .cityWrap{height:150px}
+  .residents{grid-template-columns:repeat(3,1fr);gap:6px}.res{padding:8px 4px}.res small{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="top" id="top">
+  <div class="hudBand">
+    <header class="hud">
+      <div class="brand">Мэр на данных</div>
+      <a class="sr" href="https://t.me/skillroute1_bot" target="_blank" rel="noopener"><span class="sr-mark">SR</span><span class="t">Skill Route</span></a>
+      <div class="spacer"></div>
+      <div class="pill" id="monthPill" title="Месяц срока"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3" fill="#fff" stroke="#1e1b33" stroke-width="2.2"/><path d="M3 10h18" stroke="#1e1b33" stroke-width="2.2"/><rect x="3" y="5" width="18" height="5" rx="2" fill="#f04a3a" stroke="#1e1b33" stroke-width="2.2"/><path d="M8 3v4M16 3v4" stroke="#1e1b33" stroke-width="2.2" stroke-linecap="round"/></svg><span id="monthTxt">Месяц 0/24</span></div>
+      <div class="pill" title="Уровень продакта"><div class="lvl"><b id="lvlTxt">Стажёр · 0 XP</b><div class="lvlbar"><i id="lvlBar"></i></div></div></div>
+      <div class="pill streak" id="streak" data-n="0" title="Серия верных ответов"><svg viewBox="0 0 24 24"><path d="M12 22c-4.5 0-7.5-3-7.5-7 0-3.5 2.5-5.5 3.5-8 1 2 2 3 3 3 0-3 1-6 4-8-.5 3 4.5 6 4.5 13 0 4-3 7-7.5 7z" fill="#ff9933" stroke="#1e1b33" stroke-width="2" stroke-linejoin="round"/><path d="M12 22c-2 0-3.5-1.5-3.5-3.5S10 15 11 13c1 2 4.5 3 4.5 5.5S14 22 12 22z" fill="#ffd21f"/></svg><span id="streakTxt">×0</span></div>
+      <div class="stats">
+        <div class="stat" id="st-pop" title="Жители"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4.5" fill="#ffb98a" stroke="#1e1b33" stroke-width="2"/><path d="M3.5 21c.8-5 4.3-7 8.5-7s7.7 2 8.5 7z" fill="#3d8bff" stroke="#1e1b33" stroke-width="2" stroke-linejoin="round"/></svg><span><b>48 000</b><small>жители</small></span></div>
+        <div class="stat" id="st-happy" title="Счастье"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="#ffd21f" stroke="#1e1b33" stroke-width="2"/><circle cx="8.7" cy="10" r="1.3" fill="#1e1b33"/><circle cx="15.3" cy="10" r="1.3" fill="#1e1b33"/><path d="M7.5 14c1.3 2.4 7.7 2.4 9 0" fill="none" stroke="#1e1b33" stroke-width="2" stroke-linecap="round"/></svg><span><b>52%</b><small>счастье</small></span></div>
+        <div class="stat" id="st-budget" title="Бюджет"><svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5" fill="#22b87a" stroke="#1e1b33" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#d8f7e8" stroke="#1e1b33" stroke-width="1.8"/></svg><span><b>100 млн</b><small>бюджет</small></span></div>
+        <div class="stat" id="st-trust" title="Доверие команды"><svg viewBox="0 0 24 24"><path d="M12 20.5S3 15 3 9a4.5 4.5 0 0 1 9-1.2A4.5 4.5 0 0 1 21 9c0 6-9 11.5-9 11.5z" fill="#ff5fa8" stroke="#1e1b33" stroke-width="2" stroke-linejoin="round"/></svg><span><b>50</b><small>доверие</small></span></div>
+      </div>
+    </header>
+  </div>
+  <div class="cityWrap" id="cityWrap">
+    <canvas id="city" aria-label="Мультяшный город, который растёт и меняется от ваших решений"></canvas>
+    <div class="cityTag">Инсайтград · <b id="popTag">48 000</b> жит.</div>
+    <div class="chapters" id="chapters" aria-hidden="true"></div>
+  </div>
+</div>
+
+<main class="stage" id="stage" aria-live="polite"></main>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s);
+const stage=$('#stage');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fmt=n=>Math.round(n).toLocaleString('ru-RU');
+const sleep=ms=>new Promise(r=>setTimeout(r,reduce?0:ms));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const INK='#1e1b33';
+const CH=['Старт','Первый день','Полярная звезда','Выход в поле','Цифры','Гипотеза','Эксперимент','Последствия','Ловушка','Призраки прошлого','Бюджет','Кризис','Средняя температура','Выборы'];
+
+/* ================= FACES ================= */
+function face(o,mood='neutral',noBg=false){
+  const f=Object.assign({skin:'#f6c39d',hair:'short',hc:'#3b2550',shirt:'#22b87a',bg:'#c9f3e1'},o);
+  const S=`stroke="${INK}" stroke-width="2.5"`;
+  let s=noBg?'':`<rect width="64" height="64" fill="${f.bg}"/>`;
+  s+=`<path d="M11 66c1-12 9-17 21-17s20 5 21 17z" fill="${f.shirt}" ${S}/>`;
+  if(f.tie) s+=`<path d="M29 49l3 11 3-11z" fill="#f04a3a" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`;
+  if(f.collar) s+=`<path d="M26 50l6 5 6-5" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>`;
+  if(f.hair==='bob') s+=`<path d="M15 37c-3-17 6-26 17-26s20 9 17 26l-3 9H18z" fill="${f.hc}" ${S} stroke-linejoin="round"/>`;
+  if(f.hair==='pony') s+=`<path d="M44 22c9 2 11 14 6 24-1-8-4-14-9-17z" fill="${f.hc}" ${S} stroke-linejoin="round"/>`;
+  if(f.hair==='bun') s+=`<circle cx="32" cy="12" r="7" fill="${f.hc}" ${S}/><path d="M17 33c-2-12 6-19 15-19s17 7 15 19z" fill="${f.hc}" ${S}/>`;
+  if(f.hair==='long') s+=`<path d="M16 34c-2-15 6-23 16-23s18 8 16 23l1 16H15z" fill="${f.hc}" ${S} stroke-linejoin="round"/>`;
+  s+=`<ellipse cx="32" cy="34" rx="13.5" ry="15" fill="${f.skin}" ${S}/>`;
+  if(f.hair==='short'||f.hair==='pony'||f.hair==='long') s+=`<path d="M18.6 31c-.5-10 5.5-16 13.4-16s14 6 13.4 16c-3-5-8-8-13.4-8-6 0-9 3-13.4 8z" fill="${f.hc}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`;
+  if(f.hair==='bob') s+=`<path d="M19 28c4-9 18-11 26-1-7-2-15-4-26 1z" fill="${f.hc}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`;
+  if(f.hair==='bun') s+=`<path d="M20 28c6-5 18-5 24 0-8-2-16-2-24 0z" fill="${f.hc}" stroke="${INK}" stroke-width="2"/>`;
+  if(f.hair==='curly') s+=[[22,22,6],[30,18,6.5],[38,18,6.5],[44,23,5.5],[19,29,4.5],[46,30,4.5]].map(c=>`<circle cx="${c[0]}" cy="${c[1]}" r="${c[2]}" fill="${f.hc}" stroke="${INK}" stroke-width="2"/>`).join('');
+  if(f.hair==='bald') s+=`<path d="M18.5 31c-3-3-3-9 1-10M45.5 31c3-3 3-9-1-10" fill="none" stroke="${f.hc}" stroke-width="4" stroke-linecap="round"/><path d="M18.5 31c-3-3-3-9 1-10M45.5 31c3-3 3-9-1-10" fill="none" stroke="${INK}" stroke-width="1.2" stroke-linecap="round"/>`;
+  if(f.hat) s+=`<path d="M17 28c0-10 7-15 15-15s15 5 15 15z" fill="#ff9933" ${S} stroke-linejoin="round"/><path d="M13 28h38" stroke="${INK}" stroke-width="3" stroke-linecap="round"/><path d="M32 13v15" stroke="${INK}" stroke-width="2"/>`;
+  // brows
+  const br={angry:'M21 27l8 2.5M43 27l-8 2.5',sad:'M21 29l8-2.5M43 29l-8-2.5',happy:'M21 28q4-3 8 0M35 28q4-3 8 0',neutral:'M22 28h7M35 28h7',surprised:'M21 25q4-3 8 0M35 25q4-3 8 0'}[mood]||'M22 28h7M35 28h7';
+  s+=`<path d="${br}" stroke="${f.hc==='#d8d8e4'||f.hair==='bald'?'#6b6b80':INK}" stroke-width="${f.hair==='bald'?3.5:2.6}" stroke-linecap="round" fill="none"/>`;
+  // eyes
+  const er=mood==='surprised'?2.8:2.1;
+  if(f.glasses) s+=`<circle cx="26" cy="34" r="5" fill="#fff" stroke="${INK}" stroke-width="2"/><circle cx="38" cy="34" r="5" fill="#fff" stroke="${INK}" stroke-width="2"/><path d="M31 34h2" stroke="${INK}" stroke-width="2"/>`;
+  if(mood==='happy'&&!f.glasses) s+=`<path d="M23.5 35q2.5-3 5 0M35.5 35q2.5-3 5 0" stroke="${INK}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+  else s+=`<circle cx="26.3" cy="34.3" r="${er}" fill="${INK}"/><circle cx="38.3" cy="34.3" r="${er}" fill="${INK}"/>`;
+  // mouth
+  const m={happy:`<path d="M25 41.5c3 5.5 11 5.5 14 0z" fill="#fff" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>`,
+    neutral:`<path d="M27.5 43.5h9" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/>`,
+    angry:`<path d="M26 45.5c3-3.5 9-3.5 12 0" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>`,
+    sad:`<path d="M27.5 45c2.5-2 6.5-2 9 0" fill="none" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/>`,
+    surprised:`<ellipse cx="32" cy="44" rx="3" ry="3.8" fill="${INK}"/>`}[mood];
+  s+=m;
+  if(f.mustache) s+=`<path d="M22 41.5c4-4 8-3 10-1 2-2 6-3 10 1-3 1-6 2-10 0-4 2-7 1-10 0z" fill="#9b9bab" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`;
+  if(f.blush) s+=`<circle cx="20.5" cy="40" r="2.3" fill="#ff8fbc" opacity=".7"/><circle cx="43.5" cy="40" r="2.3" fill="#ff8fbc" opacity=".7"/>`;
+  return s;
+}
+const faceSvg=(o,mood)=>`<svg viewBox="0 0 64 64" aria-hidden="true">${face(o,mood)}</svg>`;
+const faceAt=(o,mood,x,y,size)=>`<svg x="${x}" y="${y}" width="${size}" height="${size}" viewBox="0 0 64 64">${face(o,mood,true)}</svg>`;
+
+const PEOPLE={
+  dana:{n:'Дана',r:'аналитик данных',f:{skin:'#f6c39d',hair:'bob',hc:'#3b2550',shirt:'#22b87a',glasses:true,blush:true,bg:'#c9f3e1'}},
+  gromov:{n:'Громов',r:'советник, 25 лет в мэрии',f:{skin:'#eba780',hair:'bald',hc:'#c9c9d6',shirt:'#4a5470',tie:true,mustache:true,bg:'#ffd6d1'}},
+  timur:{n:'Тимур',r:'инженер транспорта',f:{skin:'#c98b62',hair:'short',hc:'#2b1d14',shirt:'#3d8bff',hat:true,bg:'#d3e6ff'}},
+  vera:{n:'Вера Петровна',r:'пенсионерка, 71 год',f:{skin:'#f8d2b4',hair:'bun',hc:'#d8d8e4',shirt:'#ff5fa8',glasses:true,blush:true,bg:'#fff0b8'}},
+  artem:{n:'Артём',r:'студент колледжа, 19 лет',f:{skin:'#f1b48c',hair:'curly',hc:'#7a4a2a',shirt:'#ff9933',bg:'#ffe3c7'}},
+  aigul:{n:'Айгуль',r:'мама двоих детей, 34 года',f:{skin:'#e8b08a',hair:'pony',hc:'#2a1a1a',shirt:'#8b6cff',collar:true,blush:true,bg:'#efe4ff'}}
+};
+const MAYORS=[
+  {skin:'#f1c4a0',hair:'short',hc:'#3a2418',shirt:'#ffd21f',tie:true,bg:'#fff3b8'},
+  {skin:'#f6d0b0',hair:'long',hc:'#c0432b',shirt:'#3d8bff',collar:true,blush:true,bg:'#dcebff'},
+  {skin:'#a8714f',hair:'curly',hc:'#1e1b33',shirt:'#22b87a',bg:'#d8f7e8'},
+  {skin:'#f3c9a5',hair:'pony',hc:'#e0b84a',shirt:'#ff5fa8',collar:true,blush:true,bg:'#ffe1ef'}
+];
+
+/* ================= STATE ================= */
+let S;
+function fresh(){return {pop:48000,happy:52,budget:100,trust:50,xp:0,correct:0,total:0,streak:0,bestStreak:0,flags:{},chapter:0,month:0,lessons:[],ach:[],name:'Алекс',av:0,level:0};}
+const LEVELS=[{n:'Стажёр',x:0},{n:'Junior PM',x:40},{n:'Middle PM',x:95},{n:'Senior PM',x:155},{n:'Head of Product',x:215}];
+const ACH={
+  skeptic:{n:'Скептик',d:'Не поддались HiPPO',c:'#3d8bff',g:'eye'},
+  star:{n:'Полярник',d:'Нашли North Star',c:'#ffd21f',g:'star'},
+  voice:{n:'Голос жителей',d:'3 сильных вопроса',c:'#ff5fa8',g:'chat'},
+  funnel:{n:'Детектив воронки',d:'Нашли главный провал',c:'#8b6cff',g:'funnel'},
+  hypo:{n:'Архитектор гипотез',d:'Идеальная гипотеза',c:'#22b87a',g:'bulb'},
+  patient:{n:'Терпение',d:'Довели тест до конца',c:'#ff9933',g:'clock'},
+  confound:{n:'Третий фактор',d:'Корреляция ≠ причина',c:'#3d8bff',g:'link'},
+  sunk:{n:'Без сожалений',d:'Не жалели вложенного',c:'#f04a3a',g:'anchor'},
+  fullchart:{n:'Весь график',d:'Поймали черри-пикинг',c:'#f04a3a',g:'chart'},
+  rice:{n:'RICE-мастер',d:'Лучший портфель',c:'#22b87a',g:'coin'},
+  cool:{n:'Хладнокровие',d:'Справились с кризисом',c:'#8b6cff',g:'shield'},
+  segment:{n:'Сегментатор',d:'Нашли Заречье',c:'#ff9933',g:'map'},
+  streak5:{n:'На кураже',d:'Серия из 5 ответов',c:'#ff9933',g:'fire'},
+  reelected:{n:'Второй срок',d:'Выиграли выборы',c:'#ffd21f',g:'crown'}
+};
+function badgeSvg(id){const a=ACH[id];const G={
+  eye:`<ellipse cx="20" cy="20" rx="10" ry="6.5" fill="#fff" stroke="${INK}" stroke-width="2"/><circle cx="20" cy="20" r="3.5" fill="${INK}"/>`,
+  star:`<path d="M20 8l3.5 7.5 8 1-6 5.5 1.6 8-7.1-4-7.1 4 1.6-8-6-5.5 8-1z" fill="#fff" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`,
+  chat:`<path d="M9 12h22v13H18l-6 5v-5H9z" fill="#fff" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`,
+  funnel:`<path d="M9 11h22l-8 10v8l-6 3V21z" fill="#fff" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`,
+  bulb:`<path d="M20 8a8 8 0 0 0-5 14v4h10v-4A8 8 0 0 0 20 8z" fill="#fff" stroke="${INK}" stroke-width="2"/><path d="M16 30h8" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>`,
+  clock:`<circle cx="20" cy="20" r="10" fill="#fff" stroke="${INK}" stroke-width="2"/><path d="M20 14v6l4 3" stroke="${INK}" stroke-width="2.4" stroke-linecap="round" fill="none"/>`,
+  link:`<rect x="8" y="16" width="13" height="8" rx="4" fill="none" stroke="#fff" stroke-width="3"/><rect x="19" y="16" width="13" height="8" rx="4" fill="none" stroke="#fff" stroke-width="3"/><rect x="8" y="16" width="13" height="8" rx="4" fill="none" stroke="${INK}" stroke-width="1.2"/><rect x="19" y="16" width="13" height="8" rx="4" fill="none" stroke="${INK}" stroke-width="1.2"/>`,
+  anchor:`<path d="M20 10v20M13 24c1 4 4 6 7 6s6-2 7-6M15 15h10" stroke="#fff" stroke-width="3.2" fill="none" stroke-linecap="round"/><circle cx="20" cy="10" r="2.5" fill="#fff"/>`,
+  chart:`<path d="M10 29V12M10 29h20" stroke="${INK}" stroke-width="2.2" fill="none"/><path d="M12 25l5-6 4 3 7-9" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  coin:`<circle cx="20" cy="20" r="10" fill="#ffd21f" stroke="${INK}" stroke-width="2"/><path d="M20 14v12M17 17h5a2 2 0 0 1 0 4h-4a2 2 0 0 0 0 4h5" stroke="${INK}" stroke-width="2" fill="none"/>`,
+  shield:`<path d="M20 8l10 4v7c0 6-4 10-10 13-6-3-10-7-10-13v-7z" fill="#fff" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`,
+  map:`<path d="M9 12l7-3 8 3 7-3v19l-7 3-8-3-7 3z" fill="#fff" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/><path d="M16 9v19M24 12v19" stroke="${INK}" stroke-width="1.6"/>`,
+  fire:`<path d="M20 32c-5 0-8-3-8-7 0-4 3-6 4-9 1 2 2 3 3 3 0-3 1-6 4-8 0 4 5 6 5 14 0 4-3 7-8 7z" fill="#fff" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`,
+  crown:`<path d="M9 28l-1-14 7 6 5-9 5 9 7-6-1 14z" fill="#fff" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`
+}[a.g];return `<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="${a.c}" stroke="${INK}" stroke-width="2.5"/>${G}</svg>`;}
+
+/* ================= HUD ================= */
+const chEl=$('#chapters');CH.forEach(()=>chEl.appendChild(document.createElement('span')));
+function setChapter(i,month){S.chapter=i;if(month!=null)S.month=month;[...chEl.children].forEach((s,k)=>{s.className=k<i?'done':k===i?'now':''});$('#monthTxt').textContent=`Месяц ${S.month}/24`;}
+function levelOf(x){let l=0;LEVELS.forEach((L,i)=>{if(x>=L.x)l=i;});return l;}
+function renderHud(){
+  $('#st-pop b').textContent=fmt(S.pop);$('#st-happy b').textContent=Math.round(S.happy)+'%';
+  $('#st-budget b').textContent=fmt(S.budget)+' млн';$('#st-trust b').textContent=Math.round(S.trust);$('#popTag').textContent=fmt(S.pop);
+  const l=levelOf(S.xp),cur=LEVELS[l],nx=LEVELS[l+1];
+  $('#lvlTxt').textContent=`${cur.n} · ${S.xp} XP`;
+  $('#lvlBar').style.width=nx?((S.xp-cur.x)/(nx.x-cur.x)*100)+'%':'100%';
+  const st=$('#streak');st.dataset.n=S.streak;$('#streakTxt').textContent='×'+S.streak;
+}
+function floater(id,val,unit){
+  const box=$('#st-'+id);const f=document.createElement('span');
+  f.className='fl '+(val>0?'p':'n');f.textContent=(val>0?'+':'−')+fmt(Math.abs(val))+(unit||'');
+  box.appendChild(f);setTimeout(()=>f.remove(),1500);
+  box.classList.remove('up','down');box.classList.add(val>0?'up':'down');setTimeout(()=>box.classList.remove('up','down'),1400);
+}
+function apply(fx={},mood){
+  const units={pop:'',happy:'%',budget:' млн',trust:''};
+  for(const k in fx){if(!(k in units)||!fx[k])continue;const b=S[k];S[k]+=fx[k];
+    if(k==='happy')S.happy=Math.max(5,Math.min(98,S.happy));if(k==='trust')S.trust=Math.max(0,Math.min(100,S.trust));if(k==='budget')S.budget=Math.max(0,S.budget);
+    const d=S[k]-b;if(d)floater(k,d,units[k]);}
+  renderHud();if(mood==='ok')city.confetti(40);if(mood==='bad')city.rain();
+}
+function toast(html,cls,ms=2600){const box=$('#toasts');while(box.children.length>=2)box.firstChild.remove();const t=document.createElement('div');t.className='toast '+(cls||'');t.innerHTML=html;$('#toasts').appendChild(t);
+  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),450);},ms);}
+function achieve(id){if(S.ach.includes(id))return;S.ach.push(id);const a=ACH[id];
+  toast(`${badgeSvg(id)}<div><b>Достижение: ${a.n}</b><small>${a.d}</small></div>`);}
+function addXP(n){if(!n)return;const before=levelOf(S.xp);S.xp=Math.max(0,S.xp+n);const after=levelOf(S.xp);renderHud();
+  if(after>before){setTimeout(()=>{toast(`<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#22b87a" stroke="${INK}" stroke-width="2.5"/><path d="M20 10l8 10h-5v9h-6v-9h-5z" fill="#fff" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/></svg><div><b>Новый уровень: ${LEVELS[after].n}</b><small>Вы растёте как продакт</small></div>`,'lvlup',3600);city.confetti(70);},400);}}
+/* score a decision: kind ok/mid/bad, pts */
+function score(kind,pts){
+  S.total++;let got=0;
+  if(kind==='ok'){S.correct++;S.streak++;S.bestStreak=Math.max(S.bestStreak,S.streak);got=pts;if(S.streak>=3)got+=5;if(S.streak===5)achieve('streak5');}
+  else if(kind==='mid'){S.streak=0;got=Math.round(pts/2);S.correct+=.5;}
+  else S.streak=0;
+  addXP(got);return got;
+}
+
+/* ================= DOM HELPERS ================= */
+function el(tag,cls,html){const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;}
+function reveal(n){requestAnimationFrame(()=>n.scrollIntoView({behavior:reduce?'auto':'smooth',block:'nearest'}));}
+function clearStage(){stage.innerHTML='';window.scrollTo({top:0,behavior:'auto'});}
+function add(n){stage.appendChild(n);reveal(n);return n;}
+let skipNow=false,typing=0;
+stage.addEventListener('click',e=>{if(typing&&!e.target.closest('button,a,input'))skipNow=true;});
+function type(node,text){return new Promise(res=>{
+  if(reduce){node.textContent=text;res();return;}
+  let i=0;typing++;node.classList.add('typing');
+  const done=()=>{node.textContent=text;node.classList.remove('typing');typing=Math.max(0,typing-1);skipNow=false;res();};
+  const step=()=>{if(skipNow)return done();i+=2;node.textContent=text.slice(0,i);if(i>=text.length)return done();setTimeout(step,14);};step();});}
+const nm=()=>esc(S.name);
+async function say(who,text,mood='neutral'){
+  let row,t;text=text.replace(/\{name\}/g,S.name);
+  if(who==='narr'){row=el('div','narr');t=el('p','txt');row.appendChild(t);}
+  else{const p=PEOPLE[who];row=el('div','line');const av=el('div','ava',faceSvg(p.f,mood));
+    const b=el('div','bubble',`<div class="who">${p.n}<em>${p.r}</em></div>`);t=el('p','txt');b.appendChild(t);row.append(av,b);}
+  add(row);await type(t,text);await sleep(200);
+}
+function chapterHead(i,month,title){
+  setChapter(i,month);clearStage();
+  add(el('div','chHead',`<div class="meta"><span class="eyebrow">Глава ${i} · ${CH[i]}</span><span class="month">Месяц ${month} из 24</span></div><h2>${title}</h2>`));
+}
+function scene(svg){return add(el('div','scene',svg));}
+function choices(opts){return new Promise(res=>{
+  const box=el('div','choices');
+  opts.forEach((o,i)=>{const b=el('button','choice',`<span class="key">${'ABCD'[i]}</span><span>${o.t}</span>`);
+    b.onclick=()=>{[...box.children].forEach(c=>c.disabled=true);const k=o.ok===true?'ok':o.ok==='mid'?'mid':'bad';b.classList.add('picked',k);
+      if(k!=='ok'){const r=opts.findIndex(x=>x.ok===true);if(r>-1)box.children[r].classList.add('right');}res(o);};
+    box.appendChild(b);});
+  add(box);box.choiceButtons=[...box.children];res.box=box;choices.last=box;});}
+const TAGS={ok:['По данным!','В точку!','Мощно!','Так держать!'],mid:['Наполовину','Почти!'],bad:['Мимо!','Ой-ой','Промах']};
+function feedback({kind,title,text,lesson,lessonTag,xp}){
+  if(lesson)S.lessons.push({tag:lessonTag||CH[S.chapter],text:lesson});
+  return new Promise(res=>{const tags=TAGS[kind];const tag=tags[Math.floor(Math.random()*tags.length)];
+    const f=el('div','fb '+kind,`<div class="fbTop"><span class="fb-tag">${tag}</span>${xp?`<span class="xpTag">+${xp} XP${S.streak>=3&&kind==='ok'?` · серия ×${S.streak}`:''}</span>`:''}</div>${title?`<h3>${title}</h3>`:''}${text?`<p>${text}</p>`:''}${lesson?`<div class="lesson"><span>Урок продакта</span><p>${lesson}</p></div>`:''}`);
+    const btn=el('button','btn','Дальше →');btn.onclick=()=>{btn.disabled=true;res();};f.appendChild(btn);add(f);});}
+function nextBtn(label,cls){return new Promise(res=>{const b=el('button','btn '+(cls||''),label||'Дальше →');b.onclick=()=>{b.disabled=true;res();};add(b);});}
+async function hintOffer(text){
+  const row=el('div','row');const b=el('button','btn ghost','Подсказка Даны · −3 XP');row.appendChild(b);add(row);
+  b.onclick=()=>{b.remove();S.xp=Math.max(0,S.xp-3);renderHud();row.appendChild(el('div','hintBox',`<b>Дана:</b> ${text}`));};
+}
+async function quiz(opts,{pts=10,hint,lessonTag,ach}={}){
+  if(hint)await hintOffer(hint);
+  const o=await choices(opts);
+  const kind=o.ok===true?'ok':o.ok==='mid'?'mid':'bad';
+  const xp=score(kind,pts);
+  if(o.flag)S.flags[o.flag]=true;
+  if(kind==='ok'&&ach)achieve(ach);
+  apply(o.fx||{},kind==='ok'?'ok':kind==='bad'?'bad':null);
+  if(o.react)await say(o.react[0],o.react[1],o.react[2]);
+  await feedback({kind,title:o.title,text:o.why,lesson:o.lesson,lessonTag,xp});
+  return o;
+}
+async function newspaper(month,headline,body,pic){
+  const p=el('div','paper',`<div class="mast"><b>ВЕСТНИК ИНСАЙТГРАДА</b><small>Месяц ${month} · цена 0 ₿</small></div><div class="headline">${headline}</div><div class="paperBody">${pic||miniCity()}<p>${body}</p></div>`);
+  add(p);await sleep(500);await nextBtn('Читать дальше →');
+}
+
+/* ================= ILLUSTRATIONS ================= */
+function miniCity(){return `<svg viewBox="0 0 110 80"><rect width="110" height="80" fill="#bfe6ff"/><circle cx="88" cy="18" r="9" fill="#ffd21f" stroke="${INK}" stroke-width="2"/>${[[8,40,18,'#ff8fbf'],[28,28,20,'#ffcf4d'],[50,44,16,'#7fd3ff'],[68,24,22,'#9be08a'],[92,38,14,'#c7a7ff']].map(b=>`<rect x="${b[0]}" y="${b[1]}" width="${b[2]}" height="${68-b[1]}" fill="${b[3]}" stroke="${INK}" stroke-width="2"/>`).join('')}<rect y="66" width="110" height="14" fill="#5c6074"/></svg>`;}
+function sceneOffice(gMood,dMood){
+  return `<svg viewBox="0 0 640 250" role="img" aria-label="Кабинет мэра: советник Громов и аналитик Дана">
+  <rect width="640" height="250" fill="#fff1c2"/>
+  <rect x="0" y="0" width="640" height="250" fill="url(#wp)" opacity=".5"/>
+  <defs><pattern id="wp" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="12" cy="12" r="2" fill="#f5dc8a"/></pattern></defs>
+  <rect x="210" y="22" width="220" height="130" rx="8" fill="#8fd3ff" stroke="${INK}" stroke-width="4"/>
+  ${[[222,90,30,'#ff8fbf'],[256,70,34,'#ffcf4d'],[294,98,26,'#9be08a'],[324,60,36,'#c7a7ff'],[364,88,28,'#7fd3ff'],[394,76,26,'#ffa86b']].map(b=>`<rect x="${b[0]}" y="${b[1]}" width="${b[2]}" height="${150-b[1]}" fill="${b[3]}" stroke="${INK}" stroke-width="2.5"/>`).join('')}
+  <path d="M320 22v130M210 87h220" stroke="${INK}" stroke-width="4"/>
+  <circle cx="395" cy="45" r="11" fill="#ffd21f" stroke="${INK}" stroke-width="2.5"/>
+  <rect x="470" y="40" width="120" height="80" rx="6" fill="#fff" stroke="${INK}" stroke-width="3"/>
+  <path d="M482 104l20-22 18 12 22-30 22 16" fill="none" stroke="#f04a3a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="482" y="58" font-family="Rubik,sans-serif" font-weight="800" font-size="12" fill="${INK}">НАСЕЛЕНИЕ ↓</text>
+  <rect x="40" y="40" width="110" height="20" fill="#c9a37a" stroke="${INK}" stroke-width="2.5"/><rect x="40" y="70" width="110" height="20" fill="#c9a37a" stroke="${INK}" stroke-width="2.5"/>
+  ${[44,58,70,86,100,118,132].map((x,i)=>`<rect x="${x}" y="${i%2?24:26}" width="11" height="${i%2?16:14}" fill="${['#f04a3a','#3d8bff','#22b87a','#ffd21f','#8b6cff','#ff9933','#ff5fa8'][i]}" stroke="${INK}" stroke-width="2"/>`).join('')}
+  ${faceAt(PEOPLE.gromov.f,gMood,40,108,130)}
+  ${faceAt(MAYORS[S.av],'neutral',255,112,130)}
+  ${faceAt(PEOPLE.dana.f,dMood,470,108,130)}
+  <rect x="150" y="196" width="340" height="60" rx="6" fill="#b07a4a" stroke="${INK}" stroke-width="4"/>
+  <rect x="270" y="182" width="100" height="22" rx="4" fill="#fff" stroke="${INK}" stroke-width="3"/>
+  <text x="320" y="198" text-anchor="middle" font-family="Rubik,sans-serif" font-weight="900" font-size="13" fill="${INK}">МЭР ${esc(S.name).toUpperCase().slice(0,10)}</text>
+  <rect x="180" y="186" width="56" height="14" fill="#fff" stroke="${INK}" stroke-width="2.5" transform="rotate(-6 208 193)"/>
+  <rect x="410" y="186" width="44" height="14" fill="#7fd3ff" stroke="${INK}" stroke-width="2.5" transform="rotate(5 432 193)"/>
+  </svg>`;}
+function sceneResidents(){return `<svg viewBox="0 0 640 210" role="img" aria-label="Двор: трое жителей у подъезда">
+  <rect width="640" height="210" fill="#bfe6ff"/>
+  <rect x="20" y="20" width="230" height="170" fill="#ffa86b" stroke="${INK}" stroke-width="4"/>
+  ${[0,1,2].map(r=>[0,1,2,3].map(c=>`<rect x="${38+c*52}" y="${36+r*44}" width="34" height="26" fill="${(r+c)%3?'#d4f0ff':'#b07a4a'}" stroke="${INK}" stroke-width="2.5"/>`).join('')).join('')}
+  <rect x="420" y="40" width="200" height="150" fill="#c7a7ff" stroke="${INK}" stroke-width="4"/>
+  ${[0,1].map(r=>[0,1,2].map(c=>`<rect x="${436+c*62}" y="${58+r*50}" width="40" height="28" fill="#d4f0ff" stroke="${INK}" stroke-width="2.5"/>`).join('')).join('')}
+  <rect y="185" width="640" height="25" fill="#9be08a" stroke="${INK}" stroke-width="3"/>
+  <rect x="270" y="150" width="120" height="12" fill="#b07a4a" stroke="${INK}" stroke-width="3"/><path d="M282 162v22M378 162v22" stroke="${INK}" stroke-width="4"/>
+  ${faceAt(PEOPLE.vera.f,'neutral',150,92,104)}${faceAt(PEOPLE.artem.f,'neutral',268,82,104)}${faceAt(PEOPLE.aigul.f,'neutral',386,92,104)}
+  </svg>`;}
+function sceneBusStop(n,leaving=0){
+  let ppl='';for(let i=0;i<n;i++){const x=150+i*42,cols=['#3d8bff','#ff5fa8','#22b87a','#ff9933','#8b6cff','#f04a3a'];const gone=i>=n-leaving;
+    ppl+=`<g class="${gone?'gone':''}" style="transition:opacity .8s ${i*0.08}s, transform .8s ${i*0.08}s;${gone?'':''}"><rect x="${x-11}" y="138" width="22" height="34" rx="9" fill="${cols[i%6]}" stroke="${INK}" stroke-width="2.5"/><circle cx="${x}" cy="128" r="10" fill="${['#f6c39d','#c98b62','#f1b48c','#e8b08a'][i%4]}" stroke="${INK}" stroke-width="2.5"/><circle cx="${x-3}" cy="127" r="1.5" fill="${INK}"/><circle cx="${x+3}" cy="127" r="1.5" fill="${INK}"/><path d="M${x-3} 133q3-2 6 0" stroke="${INK}" stroke-width="1.6" fill="none"/></g>`;}
+  return `<svg viewBox="0 0 640 210" role="img" aria-label="Остановка автобуса 22 с очередью ожидающих">
+  <style>.gone{opacity:.15;transform:translateY(-6px)}</style>
+  <rect width="640" height="210" fill="#cfeaff"/>
+  <rect x="120" y="70" width="380" height="14" rx="4" fill="#3d8bff" stroke="${INK}" stroke-width="3.5"/>
+  <path d="M135 84v94M485 84v94" stroke="${INK}" stroke-width="5"/>
+  <rect x="140" y="88" width="340" height="38" fill="#e8f6ff" stroke="${INK}" stroke-width="2.5" opacity=".8"/>
+  <path d="M560 60v120" stroke="${INK}" stroke-width="5"/><circle cx="560" cy="52" r="20" fill="#ffd21f" stroke="${INK}" stroke-width="3.5"/>
+  <text x="560" y="58" text-anchor="middle" font-family="Rubik,sans-serif" font-weight="900" font-size="16" fill="${INK}">22</text>
+  <rect x="520" y="86" width="80" height="44" rx="5" fill="#fff" stroke="${INK}" stroke-width="3"/>
+  <text x="560" y="104" text-anchor="middle" font-family="Golos Text,sans-serif" font-weight="700" font-size="11" fill="${INK}">интервал</text>
+  <text x="560" y="122" text-anchor="middle" font-family="Rubik,sans-serif" font-weight="900" font-size="16" fill="#f04a3a">40 мин</text>
+  <circle cx="60" cy="60" r="28" fill="#fff" stroke="${INK}" stroke-width="3.5"/><path d="M60 42v18l12 8" stroke="${INK}" stroke-width="4" stroke-linecap="round" fill="none"/>
+  ${ppl}
+  <rect y="172" width="640" height="38" fill="#5c6074"/><rect y="172" width="640" height="7" fill="#efe6cf" stroke="${INK}" stroke-width="2.5"/>
+  </svg>`;}
+function sceneWheel(){return `<svg viewBox="0 0 640 230" role="img" aria-label="Пустое колесо обозрения с табличкой загрузки 12 процентов">
+  <rect width="640" height="230" fill="#cfd6d9"/><circle cx="320" cy="100" r="80" fill="none" stroke="${INK}" stroke-width="6"/><circle cx="320" cy="100" r="80" fill="none" stroke="#ff5fa8" stroke-width="3"/>
+  ${Array.from({length:10},(_,i)=>{const a=i*Math.PI/5,x=320+Math.cos(a)*80,y=100+Math.sin(a)*80;return `<path d="M320 100L${x} ${y}" stroke="${INK}" stroke-width="2"/><rect x="${x-9}" y="${y}" width="18" height="14" rx="4" fill="#eee" stroke="${INK}" stroke-width="2"/>`}).join('')}
+  <path d="M320 100L270 205M320 100L370 205" stroke="${INK}" stroke-width="6"/>
+  <rect x="430" y="120" width="150" height="62" rx="6" fill="#fff" stroke="${INK}" stroke-width="3.5"/>
+  <text x="505" y="146" text-anchor="middle" font-family="Golos Text,sans-serif" font-weight="700" font-size="13" fill="${INK}">загрузка</text>
+  <text x="505" y="172" text-anchor="middle" font-family="Rubik,sans-serif" font-weight="900" font-size="24" fill="#f04a3a">12%</text>
+  <rect x="60" y="130" width="140" height="56" rx="6" fill="#fff" stroke="${INK}" stroke-width="3.5"/>
+  <text x="130" y="153" text-anchor="middle" font-family="Golos Text,sans-serif" font-weight="700" font-size="12" fill="${INK}">содержание</text>
+  <text x="130" y="176" text-anchor="middle" font-family="Rubik,sans-serif" font-weight="900" font-size="18" fill="${INK}">6 млн/год</text>
+  <rect y="205" width="640" height="25" fill="#a9b0a0" stroke="${INK}" stroke-width="3"/>
+  <g class="tumble"><circle cx="0" cy="196" r="10" fill="none" stroke="#a07a4a" stroke-width="2.5" stroke-dasharray="4 3"><animateTransform attributeName="transform" type="translate" from="-20 0" to="660 0" dur="7s" repeatCount="indefinite"/></circle></g>
+  </svg>`;}
+function sceneCelebrate(){return `<svg viewBox="0 0 640 210" role="img" aria-label="Утро: полный автобус, довольные жители">
+  <rect width="640" height="210" fill="#8fd3ff"/><circle cx="560" cy="50" r="26" fill="#ffd21f" stroke="${INK}" stroke-width="3.5"/>
+  <g><rect x="120" y="84" width="300" height="86" rx="14" fill="#ffd21f" stroke="${INK}" stroke-width="4"/>
+  ${[0,1,2,3,4].map(i=>`<rect x="${138+i*54}" y="98" width="42" height="34" rx="4" fill="#d4f0ff" stroke="${INK}" stroke-width="3"/>`).join('')}
+  ${faceAt(PEOPLE.vera.f,'happy',138,96,42)}${faceAt(PEOPLE.artem.f,'happy',192,96,42)}${faceAt(PEOPLE.aigul.f,'happy',246,96,42)}${faceAt(MAYORS[S.av],'happy',354,96,42)}
+  <text x="270" y="158" text-anchor="middle" font-family="Rubik,sans-serif" font-weight="900" font-size="16" fill="${INK}">22 · каждые 12 мин</text>
+  <circle cx="170" cy="172" r="14" fill="${INK}"/><circle cx="370" cy="172" r="14" fill="${INK}"/><circle cx="170" cy="172" r="5" fill="#ccc"/><circle cx="370" cy="172" r="5" fill="#ccc"/>
+  ${reduce?'':'<animateTransform attributeName="transform" type="translate" values="0 0;0 -3;0 0" dur=".6s" repeatCount="indefinite"/>'}</g>
+  <rect y="186" width="640" height="24" fill="#5c6074"/>
+  </svg>`;}
+function sceneElection(){return `<svg viewBox="0 0 640 200" role="img" aria-label="Ночь выборов в мэрии">
+  <rect width="640" height="200" fill="#2a2850"/>${Array.from({length:30},(_,i)=>`<circle cx="${(i*97)%640}" cy="${(i*53)%90+8}" r="1.8" fill="#fff" opacity=".8"/>`).join('')}
+  <rect x="180" y="60" width="280" height="120" fill="#fff1c2" stroke="${INK}" stroke-width="4"/><path d="M170 62L320 14l150 48z" fill="#f04a3a" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/>
+  ${[0,1,2,3].map(i=>`<rect x="${200+i*64}" y="78" width="16" height="100" fill="#fff" stroke="${INK}" stroke-width="3"/>`).join('')}
+  <rect x="290" y="130" width="60" height="50" fill="#b07a4a" stroke="${INK}" stroke-width="3"/>
+  <text x="320" y="52" text-anchor="middle" font-family="Rubik,sans-serif" font-weight="900" font-size="14" fill="#fff">МЭРИЯ</text>
+  ${faceAt(MAYORS[S.av],'surprised',40,96,96)}${faceAt(PEOPLE.gromov.f,'happy',504,96,96)}
+  <rect y="180" width="640" height="20" fill="#5c6074"/></svg>`;}
+function sceneEnding(win){return `<svg viewBox="0 0 640 220" role="img" aria-label="${win?'Победа на выборах':'Поражение на выборах'}">
+  <rect width="640" height="220" fill="${win?'#8fd3ff':'#9aa5a0'}"/>
+  ${win?Array.from({length:40},(_,i)=>`<rect x="${(i*71)%640}" y="${(i*37)%160}" width="8" height="5" fill="${['#ffd21f','#ff5fa8','#22b87a','#3d8bff'][i%4]}" stroke="${INK}" stroke-width="1" transform="rotate(${i*23} ${(i*71)%640} ${(i*37)%160})"/>`).join(''):''}
+  <rect x="230" y="150" width="180" height="60" rx="6" fill="#b07a4a" stroke="${INK}" stroke-width="4"/>
+  ${win?`${faceAt(MAYORS[S.av],'happy',250,30,140)}<path d="M282 34l-4-26 22 14 20-24 20 24 22-14-4 26z" fill="#ffd21f" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>`:`${faceAt(PEOPLE.gromov.f,'happy',250,30,140)}`}
+  ${!win?`${faceAt(MAYORS[S.av],'sad',470,110,90)}`:`${faceAt(PEOPLE.dana.f,'happy',60,100,90)}${faceAt(PEOPLE.vera.f,'happy',490,100,90)}`}
+  </svg>`;}
+
+/* ================= CITY CANVAS ================= */
+const city=(()=>{
+  const cv=$('#city'),ctx=cv.getContext('2d'),wrap=$('#cityWrap');let W=0,H=0;
+  function rng(s){return()=>{s=(s*16807)%2147483647;return(s-1)/2147483646;};}
+  const r=rng(77);const COLORS=['#ff8fbf','#7fd3ff','#ffcf4d','#9be08a','#ffa86b','#c7a7ff','#ffffff','#5fd6c3'];
+  const front=[];for(let i=0;i<30;i++)front.push({x:.01+r()*.94,w:.045+r()*.045,h:.3+r()*.48,col:COLORS[Math.floor(r()*COLORS.length)],roof:Math.floor(r()*5),seed:Math.floor(r()*1e6),g:0});
+  const back=[];{let x=-.02;while(x<1.02){const w=.04+r()*.05;back.push({x,w,h:.25+r()*.3});x+=w*.92;}}
+  const clouds=[];for(let i=0;i<5;i++)clouds.push({x:r(),y:.12+r()*.28,s:.6+r()*.6,v:.00008+r()*.00012});
+  const trees=[];for(let i=0;i<14;i++)trees.push({x:.03+r()*.94,s:.75+r()*.5,g:0});
+  const birds=[];for(let i=0;i<3;i++)birds.push({x:r(),y:.15+r()*.2,p:r()*6});
+  let cars=[],bits=[],rainT=0,fireT=0,t=0,happyDisp=52,wheelA=0;
+  function hash(a,b,c){let h=(a*374761393+b*668265263+c*1013904223)|0;h=Math.imul(h^(h>>>13),1274126177);return((h^(h>>>16))>>>0)/4294967295;}
+  function resize(){const dpr=Math.min(2,window.devicePixelRatio||1);W=wrap.clientWidth;H=wrap.clientHeight;cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);}
+  new ResizeObserver(resize).observe(wrap);resize();
+  const lerp=(a,b,k)=>a+(b-a)*k;
+  function mix(c1,c2,k){const a=parseInt(c1.slice(1),16),b=parseInt(c2.slice(1),16);const h=v=>Math.round(Math.max(0,Math.min(255,v))).toString(16).padStart(2,'0');
+    return'#'+h(lerp(a>>16,b>>16,k))+h(lerp(a>>8&255,b>>8&255,k))+h(lerp(a&255,b&255,k));}
+  function rr(x,y,w,h,rad,fill,lw=2.5){ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y,w,h,rad);else ctx.rect(x,y,w,h);ctx.fillStyle=fill;ctx.fill();ctx.lineWidth=lw;ctx.strokeStyle=INK;ctx.stroke();}
+  function blob(parts,fill,lw){ctx.fillStyle=INK;parts.forEach(p=>{ctx.beginPath();ctx.arc(p[0],p[1],p[2]+lw,0,7);ctx.fill();});ctx.fillStyle=fill;parts.forEach(p=>{ctx.beginPath();ctx.arc(p[0],p[1],p[2],0,7);ctx.fill();});}
+  function cloud(cx,cy,s,fill){const u=s*16;blob([[cx,cy,u],[cx-u*1.1,cy+u*.35,u*.75],[cx+u*1.15,cy+u*.3,u*.8],[cx-u*.45,cy-u*.45,u*.8],[cx+u*.5,cy-u*.35,u*.7]],fill,2.5);}
+  function visibleCount(){if(!S)return 13;return Math.max(6,Math.min(front.length,Math.round(13+(S.pop-48000)/400)));}
+  function spawnCar(){const dir=Math.random()<.5?1:-1;const f=S?S.flags:{};let type='car';const q=Math.random();
+    if(f.buses&&q<.34)type='bus';else if(f.bikes&&q<.55)type='bike';const len=type==='bus'?44:type==='bike'?14:26;
+    cars.push({x:dir>0?-len-10:W+10,dir,type,len,v:(type==='bike'?.55:type==='bus'?.85:1.1+Math.random()*.9)*dir,c:['#f04a3a','#3d8bff','#22b87a','#ff9933','#c7a7ff','#ff5fa8'][Math.floor(Math.random()*6)]});}
+  function drawCar(c,y){const x=c.x,L=c.len;
+    if(c.type==='bike'){ctx.lineWidth=2;ctx.strokeStyle=INK;ctx.beginPath();ctx.arc(x+3,y+8,3.2,0,7);ctx.moveTo(x+14.2,y+8);ctx.arc(x+11,y+8,3.2,0,7);ctx.moveTo(x+3,y+8);ctx.lineTo(x+7,y+2);ctx.lineTo(x+11,y+8);ctx.stroke();ctx.fillStyle='#22b87a';ctx.beginPath();ctx.arc(x+7,y-3,3.2,0,7);ctx.fill();ctx.stroke();return;}
+    if(c.type==='bus'){rr(x,y-8,L,15,4,'#ffd21f');for(let i=0;i<5;i++)rr(x+4+i*8,y-5,6,5,1.5,'#bfe6ff',1.5);}
+    else{ctx.beginPath();ctx.moveTo(x+6,y-1);ctx.lineTo(x+9,y-7);ctx.lineTo(x+L-8,y-7);ctx.lineTo(x+L-4,y-1);ctx.closePath();ctx.fillStyle='#bfe6ff';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=INK;ctx.stroke();rr(x,y-2,L,8,3.5,c.c,2.2);}
+    ctx.fillStyle=INK;[x+7,x+L-7].forEach(wx=>{ctx.beginPath();ctx.arc(wx,y+7,3.6,0,7);ctx.fill();});}
+  function frame(){
+    t+=1/60;const roadH=Math.max(26,H*.13),base=H-roadH;
+    if(S)happyDisp+=(S.happy-happyDisp)*.03;const k=Math.max(0,Math.min(1,(happyDisp-25)/60));const gloom=rainT>0?Math.min(1,rainT)*.6:0;
+    const g=ctx.createLinearGradient(0,0,0,base);g.addColorStop(0,mix(mix('#9aa7a0','#45b4ff',k),'#7d8a91',gloom));g.addColorStop(1,mix(mix('#d3d4b8','#c6efff',k),'#a9b3b6',gloom));
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    const sx=W*.85,sy=H*.24,sr=Math.min(22,H*.11);
+    ctx.save();ctx.translate(sx,sy);ctx.rotate(t*.25);for(let i=0;i<10;i++){ctx.rotate(Math.PI/5);ctx.lineCap='round';ctx.strokeStyle=INK;ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(sr+6,0);ctx.lineTo(sr+14,0);ctx.stroke();ctx.strokeStyle='#ffd21f';ctx.lineWidth=3.5;ctx.stroke();}ctx.restore();
+    ctx.beginPath();ctx.arc(sx,sy,sr,0,7);ctx.fillStyle='#ffd21f';ctx.fill();ctx.lineWidth=3;ctx.strokeStyle=INK;ctx.stroke();
+    ctx.fillStyle=INK;ctx.beginPath();ctx.arc(sx-sr*.32,sy-sr*.1,2.2,0,7);ctx.arc(sx+sr*.32,sy-sr*.1,2.2,0,7);ctx.fill();
+    ctx.beginPath();ctx.lineWidth=2.2;if(k>.45)ctx.arc(sx,sy+sr*.1,sr*.38,.25,Math.PI-.25);else{ctx.moveTo(sx-sr*.3,sy+sr*.42);ctx.lineTo(sx+sr*.3,sy+sr*.42);}ctx.stroke();
+    if(k>.4)birds.forEach(b=>{const bx=((b.x+t*.012)%1.1-.05)*W,by=b.y*H+Math.sin(t*2+b.p)*3,f=Math.sin(t*8+b.p)*3;ctx.strokeStyle=INK;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(bx-6,by-f);ctx.quadraticCurveTo(bx-3,by-4,bx,by);ctx.quadraticCurveTo(bx+3,by-4,bx+6,by-f);ctx.stroke();});
+    clouds.forEach(c=>{c.x+=c.v;if(c.x>1.15)c.x=-.15;cloud(c.x*W,c.y*H,c.s*Math.min(1,H/200),mix('#ffffff','#9ea8ad',Math.max(1-k,gloom*1.4)*.7));});
+    ctx.fillStyle=INK;ctx.beginPath();ctx.ellipse(W*.2,base+10,W*.36+3,H*.32+3,0,Math.PI,0);ctx.ellipse(W*.78,base+10,W*.42+3,H*.26+3,0,Math.PI,0);ctx.fill();
+    ctx.fillStyle=mix('#9db58a','#7fd36b',k);ctx.beginPath();ctx.ellipse(W*.2,base+10,W*.36,H*.32,0,Math.PI,0);ctx.fill();
+    ctx.fillStyle=mix('#8faa7e','#62c25a',k);ctx.beginPath();ctx.ellipse(W*.78,base+10,W*.42,H*.26,0,Math.PI,0);ctx.fill();
+    back.forEach(b=>{const bh=b.h*(base-40);rr(b.x*W,base-bh,b.w*W,bh+3,3,mix('#a9bccb','#9fd0ee',k),2);});
+    if(S&&S.flags.wheel){wheelA+=S.flags.wheelClosed?0:.006;const R=Math.min(58,H*.28),cx=W*.73,cy=base-R-10;
+      ctx.lineWidth=3;ctx.strokeStyle=INK;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx-R*.5,base);ctx.moveTo(cx,cy);ctx.lineTo(cx+R*.5,base);ctx.stroke();
+      ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.lineWidth=5;ctx.stroke();ctx.strokeStyle='#ff5fa8';ctx.lineWidth=2.5;ctx.stroke();
+      for(let i=0;i<10;i++){const a=wheelA+i*Math.PI/5,x=cx+Math.cos(a)*R,y=cy+Math.sin(a)*R;ctx.strokeStyle=INK;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();rr(x-5,y,10,8,3,COLORS[i%COLORS.length],1.8);}}
+    if(S&&S.flags.it){const w=Math.max(34,W*.05),h=(base-20)*.86,x=W*.46;rr(x,base-h,w,h+3,5,'#5fd6c3',3);for(let y=base-h+10;y<base-8;y+=11){ctx.fillStyle='rgba(255,255,255,.55)';ctx.fillRect(x+5,y,w-10,4);}
+      rr(x+w/2-13,base-h-15,26,13,4,'#fff',2.5);ctx.fillStyle=INK;ctx.font='900 9px Rubik,sans-serif';ctx.textAlign='center';ctx.fillText('IT',x+w/2,base-h-5);ctx.textAlign='left';}
+    const vis=visibleCount();const boardP=Math.max(0,.55-k)*.45;
+    front.forEach((b,i)=>{b.g+=((i<vis?1:0)-b.g)*.04;if(b.g<.01)return;
+      const e=b.g<1?1-Math.pow(1-b.g,3)*(1+2.2*b.g*(1-b.g)):1;const bw=b.w*W,bh=b.h*(base-38)*Math.max(0,e),x=b.x*W,y=base-bh;const col=mix(b.col,'#b9b6aa',(1-k)*.5);
+      if(b.roof===1){ctx.strokeStyle=INK;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(x+bw*.7,y);ctx.lineTo(x+bw*.7,y-14);ctx.stroke();ctx.beginPath();ctx.arc(x+bw*.7,y-16,3.5,0,7);ctx.fillStyle='#f04a3a';ctx.fill();ctx.stroke();}
+      if(b.roof===2){ctx.beginPath();ctx.moveTo(x-3,y+2);ctx.lineTo(x+bw/2,y-Math.min(20,bw*.45));ctx.lineTo(x+bw+3,y+2);ctx.closePath();ctx.fillStyle='#f04a3a';ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle=INK;ctx.stroke();}
+      if(b.roof===3){rr(x+bw*.18,y-14,bw*.32,14,4,'#c9a37a',2.2);}
+      rr(x,y,bw,bh+3,4,col,2.8);if(b.roof===4)rr(x-3,y-5,bw+6,7,3,mix(b.col,INK,.25),2.5);
+      const cols=Math.max(2,Math.floor((bw-6)/11)),rows=Math.max(0,Math.floor((bh-18)/14)),cw=(bw-8)/cols;
+      for(let c=0;c<cols;c++)for(let q=0;q<rows;q++){const wx=x+4+c*cw+cw*.18,wy=y+10+q*14,ww=cw*.64,wh=8,hv=hash(b.seed,c,q);
+        if(hv<boardP){rr(wx,wy,ww,wh,1.5,'#b07a4a',1.5);ctx.strokeStyle=INK;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(wx,wy);ctx.lineTo(wx+ww,wy+wh);ctx.moveTo(wx+ww,wy);ctx.lineTo(wx,wy+wh);ctx.stroke();}
+        else{rr(wx,wy,ww,wh,1.5,hv>.85?'#ffe58a':'#d4f0ff',1.6);ctx.fillStyle='rgba(255,255,255,.9)';ctx.fillRect(wx+2,wy+2,Math.max(1.5,ww*.22),2);}}
+      if(bh>24)rr(x+bw/2-4,base-11,8,14,[4,4,0,0],mix(b.col,INK,.35),2);});
+    if(S&&(S.flags.yards||S.flags.park)){trees.forEach((tr,i)=>{if(!S.flags.yards&&i%3)return;tr.g+=(1-tr.g)*.04;const x=tr.x*W,s=8*tr.s*tr.g;if(s<.5)return;
+      ctx.fillStyle='#8a5a35';ctx.strokeStyle=INK;ctx.lineWidth=2;ctx.fillRect(x-2,base-s-2,4,s+2);ctx.strokeRect(x-2,base-s-2,4,s+2);blob([[x,base-s*1.9,s],[x-s*.6,base-s*1.5,s*.7],[x+s*.6,base-s*1.5,s*.7]],'#47c46a',2.2);});}
+    if(S&&S.flags.fountain){const x=W*.3;rr(x-16,base-8,32,10,4,'#9fd0ee',2.2);for(let i=0;i<16;i++){const a=(t*1.4+i/16)%1,h=Math.sin(a*Math.PI)*30;ctx.fillStyle=['#3d8bff','#ff5fa8','#ffd21f','#22b87a'][i%4];ctx.beginPath();ctx.arc(x+(i-8)*2*a,base-10-h,2.2,0,7);ctx.fill();}}
+    rr(-4,base,W+8,6,0,'#efe6cf',2.5);ctx.fillStyle='#5c6074';ctx.fillRect(0,base+6,W,roadH);
+    ctx.fillStyle='#ffd21f';for(let x=-((t*30)%36);x<W;x+=36)ctx.fillRect(x,base+6+roadH*.45,18,3);
+    if(S&&S.flags.bikes){ctx.fillStyle='#22b87a';ctx.fillRect(0,base+roadH+2,W,3);}
+    if(Math.random()<(S&&S.flags.buses?.03:.018)&&cars.length<10)spawnCar();
+    cars=cars.filter(c=>c.x>-c.len-20&&c.x<W+20);cars.sort((a,b)=>a.dir-b.dir);for(const c of cars){c.x+=c.v;drawCar(c,c.dir>0?base+roadH*.72:base+roadH*.28);}
+    if(rainT>0){rainT-=1/60;ctx.strokeStyle='rgba(61,139,255,.75)';ctx.lineWidth=2;ctx.lineCap='round';ctx.beginPath();for(let i=0;i<70;i++){const x=(i*53.7+t*240)%W,y=(i*97.3+t*560)%H;ctx.moveTo(x,y);ctx.lineTo(x-3,y+9);}ctx.stroke();cloud(W*.3,H*.12,1.2,'#8f9aa1');cloud(W*.65,H*.1,1.1,'#8f9aa1');}
+    if(fireT>0){fireT-=1/60;if(Math.random()<.06)burst(Math.random()*W,H*(.12+Math.random()*.3),46);}
+    bits=bits.filter(p=>p.l>0);for(const p of bits){p.x+=p.vx;p.y+=p.vy;p.vy+=.08;p.vx*=.99;p.rot+=p.vr;p.l-=1/60;ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,p.l*1.5));ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.fillStyle=p.c;ctx.fillRect(-3,-1.8,6,3.6);ctx.strokeStyle=INK;ctx.lineWidth=1;ctx.strokeRect(-3,-1.8,6,3.6);ctx.restore();}
+    if(!reduce)requestAnimationFrame(frame);else setTimeout(()=>requestAnimationFrame(frame),250);
+  }
+  const CC=['#ffd21f','#ff5fa8','#22b87a','#3d8bff','#ff9933'];
+  function burst(x,y,n){for(let i=0;i<n;i++){const a=Math.random()*7,s=1+Math.random()*3;bits.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1.2,l:1.6,c:CC[i%5],rot:Math.random()*6,vr:(Math.random()-.5)*.4});}}
+  requestAnimationFrame(frame);
+  return{confetti(n){for(let i=0;i<n;i++)bits.push({x:Math.random()*W,y:-10-Math.random()*40,vx:(Math.random()-.5)*1.5,vy:Math.random()*1.5,l:2.4,c:CC[i%5],rot:Math.random()*6,vr:(Math.random()-.5)*.3});},rain(){rainT=2;},fireworks(s){fireT=s;}};
+})();
+
+/* ================= SCENES ================= */
+async function intro(){
+  setChapter(0,0);clearStage();
+  let best=null;try{best=localStorage.getItem('mayor-best-v2');}catch(e){}
+  const box=el('div','intro',`
+    <span class="eyebrow">Skill Route · квест для будущих продактов</span>
+    <h1>Мэр на <mark>данных</mark></h1>
+    <p class="lede">Город Инсайтград на реке Метричке пустеет: за год уехали <strong>4 300 человек</strong>, окна заколачивают досками. Вас только что избрали мэром. Впереди <strong>24 месяца</strong> срока, команда советников с громкими мнениями и выборы в финале. Решайте как продакт-менеджер — и город оживёт у вас на глазах.</p>
+    <div class="feats">
+      <div class="feat">${badgeSvg('segment')}<span>12 глав с ветками сюжета</span></div>
+      <div class="feat">${badgeSvg('fullchart')}<span>Мини-игры: воронка, A/B-тест, RICE</span></div>
+      <div class="feat">${badgeSvg('star')}<span>Уровни, серии и 14 достижений</span></div>
+      <div class="feat">${badgeSvg('reelected')}<span>Выборы и 4 разные концовки</span></div>
+    </div>`);
+  add(box);
+  const pick=el('div','panel',`<h3>Кто будет мэром?</h3><div class="avatars" role="group" aria-label="Выбор внешности мэра"></div>
+    <div class="field"><label for="mayorName">Ваше имя</label><input id="mayorName" maxlength="14" value="Алекс" autocomplete="off"></div>`);
+  const avs=pick.querySelector('.avatars');
+  MAYORS.forEach((m,i)=>{const b=el('button','avbtn',faceSvg(m,'happy'));b.setAttribute('aria-pressed',i===0?'true':'false');b.setAttribute('aria-label','Мэр, вариант '+(i+1));
+    b.onclick=()=>{S.av=i;[...avs.children].forEach((c,k)=>c.setAttribute('aria-pressed',k===i?'true':'false'));};avs.appendChild(b);});
+  add(pick);
+  if(best)add(el('div','best',`Ваш рекорд: ${esc(best)}`));
+  await nextBtn('Вступить в должность!','pinkb big');
+  const v=($('#mayorName').value||'').trim();S.name=v||'Алекс';
+}
+
+async function ch1(){
+  chapterHead(1,1,'Первый день в кабинете');
+  scene(sceneOffice('happy','neutral'));
+  await say('narr',`Мэр ${S.name}, добро пожаловать! На столе отчёт: население падает третий год подряд. В кабинет уже зашли советники.`);
+  await say('gromov','Мэр, тут думать нечего! Ставим колесо обозрения на набережной. В соседнем городе поставили — народ повалил. Я в мэрии 25 лет, я этот город чувствую.','happy');
+  await say('dana','У меня есть опрос тех, кто уехал, и данные по транспорту. Может, сначала посмотрим, почему люди уезжают?','neutral');
+  await say('narr','Ваше первое решение. От него зависит, с чего начнётся ваш срок.');
+  const o=await quiz([
+    {t:'Строим колесо. Громову виднее, у него опыт.',ok:false,flag:'wheel',fx:{budget:-40,happy:2,trust:-6,pop:-600},react:['gromov','Вот это я понимаю — мэр! Через полгода будете мне спасибо говорить.','happy'],
+      title:'Колесо крутится, люди уезжают',why:'Колесо откроют через 8 месяцев за 40 млн. Туристов станет чуть больше, но жители продолжат уезжать: их проблема была не в развлечениях. И бюджет на главное теперь меньше.',
+      lesson:'HiPPO — решение по мнению самого старшего в комнате. Опыт полезен как источник гипотез, но не заменяет проверку данными.'},
+    {t:'Сначала смотрим данные Даны.',ok:true,fx:{trust:6},react:['gromov','Данные, данные... Город не таблица, мэр. Ну-ну, посмотрим.','angry'],
+      title:'Хороший старт',why:'Команда видит, что мэр проверяет идеи, а не угадывает. Громов недоволен, но его идею тоже можно будет проверить.',
+      lesson:'Начинай с проблемы, а не с решения. Сначала пойми, что происходит и почему, потом выбирай, что строить.'},
+    {t:'Запустим опрос в соцсетях: «Что построить в городе?»',ok:'mid',flag:'poll',fx:{trust:2},
+      title:'3 000 комментариев и ни одного ответа',why:'Жители попросили метро, «Икею», аквапарк и снизить налоги. Люди отлично описывают свои проблемы, но плохо придумывают решения.',
+      lesson:'Спрашивай людей об их боли и поведении («что вам мешает?»), а не о решениях («что построить?»).'}
+  ],{ach:'skeptic'});
+  if(S.flags.wheel)await newspaper(1,'Мэр обещает колесо обозрения! Жители спрашивают про автобусы','Советник Громов назвал проект «главной стройкой десятилетия». На остановках тем временем по-прежнему ждут 22-й по сорок минут.');
+  else if(S.flags.poll)await newspaper(1,'Мэр спросил горожан — получил 3 000 советов, включая метро','Самые популярные предложения: метро, аквапарк, «Икея» и «чтобы всё было хорошо». Аналитики мэрии разбирают комментарии.');
+  else await newspaper(1,'Новый мэр заперся с аналитиками. Громов недоволен','«Раньше решения принимались за пять минут», — пожаловался советник. В мэрии говорят, что ищут причину оттока жителей.');
+}
+
+async function ch2(){
+  chapterHead(2,2,'Как понять, что городу стало лучше?');
+  await say('dana','Нам нужна одна главная метрика — North Star. Она показывает, получают ли жители ценность от города. По ней будем мерить каждое решение.','happy');
+  await say('narr','Какую метрику выберете Полярной звездой города?');
+  await quiz([
+    {t:'Количество построенных объектов за год',ok:false,title:'Это метрика активности',why:'Построить можно и то, что никому не нужно. Метрика растёт, даже когда городу становится хуже.'},
+    {t:'Подписчики паблика мэрии',ok:false,title:'Это пиар, а не жизнь',why:'Подписки показывают интерес к мэрии, но ничего не говорят о том, хорошо ли людям в городе.'},
+    {t:'Доля жителей, которые живут в городе дольше года и готовы советовать его друзьям',ok:true,title:'Точно в цель',why:'Метрика связана с главной проблемой — оттоком — и с ценностью для людей. Сейчас она 61%.',
+      lesson:'North Star отражает ценность для пользователя и предсказывает успех продукта. Хорошая метрика — про результат для людей, а не про ваши действия.'},
+    {t:'Объём освоенного бюджета',ok:false,title:'Потратить ≠ сделать лучше',why:'Деньги можно потратить быстро и бесполезно. Это затраты, а не ценность.'}
+  ],{ach:'star',hint:'Ищите метрику, которая растёт, только когда жителям действительно лучше, и падает, когда они уезжают.'});
+  await say('gromov','А мне на планёрке принесли шесть отличных метрик. Все растут! Отметьте, мэр, какие из них — пустышки. Если найдёте.','happy');
+  const items=[{t:'Просмотры ролика о городе',v:true},{t:'Среднее время в пути до работы',v:false},{t:'Число перерезанных ленточек',v:true},{t:'Доля уехавших за квартал',v:false},{t:'Лайки под постами мэра',v:true},{t:'Пустующие квартиры, %',v:false}];
+  const p=el('div','panel','<div class="panel-h"><h3>Найдите метрики тщеславия</h3><small>отметьте все пустышки</small></div>');
+  const chips=el('div','chips');
+  items.forEach(it=>{const c=el('button','chip',it.t);c.setAttribute('aria-pressed','false');c.onclick=()=>c.setAttribute('aria-pressed',c.getAttribute('aria-pressed')==='true'?'false':'true');it.el=c;chips.appendChild(c);});
+  p.appendChild(chips);add(p);
+  await nextBtn('Проверить');
+  let right=0;items.forEach(it=>{const sel=it.el.getAttribute('aria-pressed')==='true';it.el.disabled=true;if(sel===it.v)right++;else it.el.classList.add('miss');it.el.classList.add(it.v?'vanity':'useful');it.el.setAttribute('aria-pressed','false');it.el.textContent=(it.v?'Пустышка: ':'Полезная: ')+it.t;});
+  const kind=right>=6?'ok':right>=4?'mid':'bad';const xp=score(kind,10);
+  apply({trust:right>=5?3:0},kind==='ok'?'ok':kind==='bad'?'bad':null);
+  await say('gromov',right>=5?'Хм. Ладно, с лайками я, может, погорячился.':'Вот видите, всё не так однозначно!',right>=5?'sad':'happy');
+  await feedback({kind,xp,title:`${right} из 6 верно`,text:'Розовые — метрики тщеславия: растут от пиара и активности мэрии. Зелёные можно изменить решениями, и они отражают жизнь людей. Пунктиром обведены ошибки.',
+    lesson:'Метрика тщеславия радует в отчёте, но не помогает принять решение. Спроси себя: «Что я сделаю по-другому, если эта цифра упадёт?»'});
+}
+
+async function ch3(){
+  chapterHead(3,3,'Выход в поле');
+  scene(sceneResidents());
+  await say('dana','Прежде чем смотреть таблицы, поговорим с людьми. У подъезда нас ждут трое жителей. Времени мало: выберите 3 вопроса из 6.','happy');
+  const people=['vera','artem','aigul'];
+  const res=el('div','residents');people.forEach(id=>{const p=PEOPLE[id];res.appendChild(el('div','res',`<div class="ava">${faceSvg(p.f,'neutral')}</div><b>${p.n}</b><small>${p.r}</small>`));});add(res);
+  const Q=[
+    {t:'Расскажите, как прошёл ваш вчерашний день — от выхода из дома до вечера?',g:'g',note:'Про реальное поведение',a:['Час ждала 22-й, опоздала к врачу. Обратно пешком шла.','До колледжа ждать автобус 40 минут, так что езжу на самокате. Зимой — никак.','Садик в 8, работа в 9. Автобус непредсказуемый, вожу детей на такси — 600 в день.']},
+    {t:'Вам бы понравилось колесо обозрения на набережной?',g:'b',note:'Наводящий вопрос',a:['Ну... наверное, да, красиво.','Прикольно, наверное.','Да, детям понравится. Наверное.']},
+    {t:'Что вас больше всего раздражает в городе?',g:'g',note:'Про боль',a:['Автобусы. И что расписание на остановке прошлогоднее.','Транспорт, и вечером во дворах темно.','Транспорт. И дворы — детям негде гулять.']},
+    {t:'Вы же любите наш город, правда?',g:'b',note:'Ответ подсказан',a:['Конечно, всю жизнь здесь.','Ну да.','Конечно!']},
+    {t:'Когда вы последний раз всерьёз думали о переезде? Что случилось?',g:'g',note:'Про конкретный случай',a:['Месяц назад, когда пропустила приём из-за автобуса. Дочка зовёт к себе.','Каждый раз, когда опаздываю на пары. Друзья уже уехали.','Когда младший заболел, а скорая долго ехала через пробки. Муж ищет работу в другом городе.']},
+    {t:'Сколько бы вы платили за проезд, если бы автобусы стали лучше?',g:'m',note:'Гипотетический вопрос',a:['Ну... рублей 50? Не знаю.','Столько же, сколько сейчас.','Смотря насколько лучше.']}
+  ];
+  const panel=el('div','panel','<div class="panel-h"><h3>Ваши вопросы</h3><small id="qcount">выбрано 0 из 3</small></div>');
+  const list=el('div','qlist');const sel=new Set();
+  const go=el('button','btn','Задать вопросы');go.disabled=true;
+  Q.forEach((q,i)=>{const b=el('button','q',`<span class="box">${i+1}</span><span>${q.t}</span>`);b.setAttribute('aria-pressed','false');
+    b.onclick=()=>{if(sel.has(i))sel.delete(i);else{if(sel.size>=3)return;sel.add(i);}b.setAttribute('aria-pressed',sel.has(i)?'true':'false');$('#qcount').textContent=`выбрано ${sel.size} из 3`;go.disabled=sel.size!==3;};q.el=b;list.appendChild(b);});
+  panel.append(list,go);add(panel);
+  await new Promise(r=>go.onclick=r);go.disabled=true;Q.forEach(q=>q.el.disabled=true);
+  const ansBox=el('div','answers');add(ansBox);
+  let good=0;
+  for(const i of [...sel].sort((a,b)=>a-b)){const q=Q[i];if(q.g==='g')good++;
+    if(q.g!=='m')q.el.classList.add(q.g==='g'?'goodq':'badq');
+    const qa=el('div','qa',`<span class="qv ${q.g}">${q.g==='g'?'Сильный вопрос':q.g==='b'?'Слабый вопрос':'Так себе'} · ${q.note}</span><h4>«${q.t}»</h4>`);
+    ansBox.appendChild(qa);reveal(qa);
+    for(let k=0;k<3;k++){await sleep(350);const p=PEOPLE[people[k]];qa.appendChild(el('div','ans',`<span class="mini">${faceSvg(p.f,q.g==='g'?(k===0?'sad':'neutral'):'neutral')}</span><span><b>${p.n}:</b> ${q.a[k]}</span>`));reveal(qa);}
+  }
+  S.insights=good;
+  const kind=good===3?'ok':good===2?'mid':'bad';const xp=score(kind,12);if(good===3)achieve('voice');
+  apply({trust:good*2},kind==='ok'?'ok':kind==='bad'?'bad':null);
+  await say('dana',good>=2?'Все трое говорят про автобусы — и называют конкретные случаи. Это уже сигнал. Проверим цифрами.':'Маловато конкретики: люди вежливо соглашались. Придётся опираться на цифры.',good>=2?'happy':'sad');
+  await feedback({kind,xp,title:`Сильных вопросов: ${good} из 3`,text:'Лучшие вопросы — открытые и про прошлое поведение: «расскажите, как было». Наводящие («вам бы понравилось?») и гипотетические («сколько бы платили?») дают вежливые, но бесполезные ответы.',
+    lesson:'На интервью спрашивай про реальный опыт и конкретные случаи, а не мнение о будущем. Люди плохо предсказывают своё поведение, но хорошо помнят, что их бесило вчера.'});
+}
+
+async function ch4(){
+  chapterHead(4,4,'Цифры не врут, но и не всё рассказывают');
+  await say('dana','Опрос 1 200 человек, которые уехали за последний год. Главная причина отъезда:');
+  const data=[{l:'Транспорт',v:38},{l:'Работа',v:27},{l:'Жильё',v:18},{l:'Досуг',v:9},{l:'Другое',v:8}];
+  const p=el('div','panel','<div class="panel-h"><h3>Главная причина отъезда</h3><small>опрошено 1 200 человек</small></div>');
+  const bars=el('div','bars');data.forEach((d,i)=>bars.appendChild(el('div','bar'+(i===0?' hot':''),`<span>${d.l}</span><div class="track"><div class="fill"></div></div><span class="v">${d.v}%</span>`)));
+  p.appendChild(bars);add(p);setTimeout(()=>[...bars.querySelectorAll('.fill')].forEach((f,i)=>f.style.width=data[i].v/38*100+'%'),reduce?0:150);
+  await sleep(900);
+  if(S.flags.wheel)await say('gromov','Досуг — девять процентов... Ну, колесо-то уже строится, чего теперь.','sad');
+  await say('narr','С какой причины начнёте?');
+  await quiz([
+    {t:'Транспорт: самая большая доля, и мэрия управляет им напрямую',ok:true,title:'Большая боль, которую можно исправить',why:'Транспорт — самая частая причина, и маршрутами управляет город. Быстрый путь к эффекту.',lesson:'Выбирай проблему по двум осям: насколько она большая и насколько ты можешь на неё повлиять.'},
+    {t:'Работа: без работы никто не останется',ok:'mid',title:'Важно, но медленно',why:'Причина серьёзная, но рабочие места создают бизнесы, а не мэрия. Эффект — через годы. Вернёмся к этому, когда будем делить бюджет.'},
+    {t:'Досуг: людям скучно',ok:false,title:'Всего 9%',why:'Это самая маленькая из названных причин. Даже идеальное решение здесь почти не изменит отток.'}
+  ]);
+  await say('timur','Транспорт — это моё. Вот остановка 22-го в 8 утра. А ниже — воронка поездки на работу за неделю. Где мы теряем людей? Нажмите на шаг.');
+  const sc=scene(sceneBusStop(9,0));
+  const steps=[{l:'Собрались ехать на автобусе',v:10000},{l:'Дошли до остановки',v:9300},{l:'Дождались автобуса за 15 мин',v:4200},{l:'Сели, было место',v:3900},{l:'Доехали к 9:00',v:3600}];
+  const fp=el('div','panel','<div class="panel-h"><h3>Воронка: дорога на работу</h3><small>людей за неделю</small></div>');
+  const fun=el('div','funnel');
+  const pick=new Promise(res=>{steps.forEach((s,i)=>{
+    if(i){const drop=Math.round((1-s.v/steps[i-1].v)*100);fun.appendChild(el('div','drop'+(drop>40?' big':''),`↓ потеряли ${drop}%`));}
+    const b=el('button','fstep',`<span class="flabel"><span>${s.l}</span><em>${fmt(s.v)}</em></span><span class="ftrack"><span class="fbar"></span></span>`);
+    b.onclick=()=>res(i);fun.appendChild(b);s.btn=b;setTimeout(()=>b.querySelector('.fbar').style.width=(s.v/100)+'%',reduce?0:150+i*130);});});
+  fp.appendChild(fun);add(fp);
+  const i=await pick;steps.forEach(s=>s.btn.disabled=true);fun.classList.add('revealed');
+  sc.innerHTML=sceneBusStop(9,5);
+  const ok=i===2;steps[2].btn.classList.add('ok');if(!ok)steps[i].btn.classList.add('bad');
+  const xp=score(ok?'ok':'bad',10);if(ok)achieve('funnel');apply(ok?{trust:3}:{},ok?'ok':'bad');
+  await feedback({kind:ok?'ok':'bad',xp,title:ok?'Нашли дыру: ожидание автобуса':'Посмотрите на перепады между шагами',
+    text:'Больше половины людей (55%) не дожидаются автобуса за 15 минут: уходят на такси или остаются дома. На остановке это видно — очередь тает. Все остальные шаги теряют меньше 10%.',
+    lesson:'Воронка показывает, на каком шаге люди отваливаются. Чинить нужно самый большой провал, а не самый заметный шаг.'});
+  if((S.insights||0)>=2)await say('dana','И это сходится с интервью: Вера Петровна, Артём и Айгуль рассказывали ровно про ожидание. Цифры показали, где болит. Люди объяснили, почему.','happy');
+  else await say('vera','Господин мэр, 22-й ходит раз в сорок минут, а расписание на остановке прошлогоднее. Я теперь на такси езжу, а пенсия не резиновая.','sad');
+  S.lessons.push({tag:'Цифры',text:'Количественные данные показывают, ГДЕ проблема, разговоры с людьми объясняют ПОЧЕМУ. Нужны оба источника.'});
+}
+
+async function ch5(){
+  chapterHead(5,5,'Собираем гипотезу');
+  await say('timur','Я готов что-то менять по автобусам. Но Дана говорит: «Сначала гипотеза». Соберите её из деталей — так, чтобы через полтора месяца было ясно, сработало или нет.');
+  const slots=[
+    {k:'Изменение',o:[['Покрасить автобусы в яркий цвет',0],['Сократить интервал 22-го и ещё двух маршрутов с 40 до 12 минут',1],['Поставить Wi-Fi в салонах',0]]},
+    {k:'Метрика',o:[['лайки под новостью о маршрутах',0],['число купленных автобусов',0],['доля доехавших на работу к 9:00',1]]},
+    {k:'Цель',o:[['вырастет с 36% до 45%',1],['станет лучше',0],['вырастет до 100%',0]]},
+    {k:'Срок',o:[['за 6 недель',1],['когда-нибудь',0],['за 1 день',0]]}
+  ];
+  const panel=el('div','panel','<div class="panel-h"><h3>Конструктор гипотезы</h3><small>выберите по одной детали в каждом ряду</small></div>');
+  const prev=el('div','preview');const wrap=el('div','slots');const chosen=[null,null,null,null];
+  const check=el('button','btn','Проверить гипотезу');check.disabled=true;
+  function render(){const w=i=>chosen[i]==null?`<span class="empty">${slots[i].k.toLowerCase()}</span>`:`<span>${slots[i].o[chosen[i]][0]}</span>`;
+    prev.innerHTML=`Если ${w(0)}, то ${w(1)} ${w(2)} ${w(3)}.`;check.disabled=chosen.some(c=>c==null);}
+  slots.forEach((s,si)=>{const row=el('div','slot',`<b>${s.k}</b>`);const ch=el('div','chips');
+    s.o.forEach((o,oi)=>{const b=el('button','chip',o[0]);b.setAttribute('aria-pressed','false');b.onclick=()=>{chosen[si]=oi;[...ch.children].forEach((c,k)=>c.setAttribute('aria-pressed',k===oi?'true':'false'));render();};ch.appendChild(b);});
+    row.appendChild(ch);wrap.appendChild(row);s.ch=ch;});
+  panel.append(prev,wrap,check);add(panel);render();
+  await new Promise(r=>check.onclick=r);check.disabled=true;
+  let right=0;slots.forEach((s,si)=>{[...s.ch.children].forEach((c,k)=>{c.disabled=true;if(k===chosen[si])c.classList.add(s.o[k][1]?'useful':'vanity','miss');if(s.o[k][1])c.classList.add('useful');});if(s.o[chosen[si]][1]){right++;s.ch.children[chosen[si]].classList.remove('miss');}});
+  const kind=right===4?'ok':right>=2?'mid':'bad';const xp=score(kind,12);if(right===4)achieve('hypo');apply({trust:right===4?3:0},kind==='ok'?'ok':kind==='bad'?'bad':null);
+  await say('timur',right===4?'Вот это я понимаю — с цифрами и сроком. Завтра запускаем.':'Чего-то не хватает... Дана поправила формулировку, но запомните, как надо.',right===4?'happy':'neutral');
+  await feedback({kind,xp,title:`Точных деталей: ${right} из 4`,text:'Сильная гипотеза: «Если сократить интервал 22-го и ещё двух маршрутов с 40 до 12 минут, то доля доехавших на работу к 9:00 вырастет с 36% до 45% за 6 недель». Изменение связано с найденной болью, есть метрика, цель и срок.',
+    lesson:'Формула гипотезы: «Если [изменение], то [метрика] изменится с X до Y за [срок], потому что [инсайт из данных]». Без цифр и срока гипотезу нельзя проверить.'});
+}
+
+async function ch6(){
+  chapterHead(6,7,'Эксперимент на живом городе');
+  await say('timur','Как запускаем частые автобусы?');
+  await quiz([
+    {t:'Сразу на всех маршрутах: зачем ждать?',ok:false,fx:{trust:-2},title:'Не с чем сравнить',why:'Если запустить везде, результат смешается с сезоном, погодой и ремонтами. Дана уговорила вас разделить маршруты на две группы.'},
+    {t:'Делим 6 похожих маршрутов: на 3 новый интервал, на 3 всё как было',ok:true,fx:{trust:3},title:'Это A/B-тест',why:'Похожие маршруты в одно время: погода, сезон и ремонты влияют на обе группы одинаково. Разница покажет эффект именно частых автобусов.',
+      lesson:'A/B-тест: контрольная группа живёт как раньше, тестовая получает изменение. Сравниваем их в одно и то же время.'},
+    {t:'Только на маршруте у дома Громова, он проследит',ok:false,fx:{trust:-2},react:['gromov','А что такого? Я бы лично каждый автобус проверял!','happy'],title:'Смещённая выборка',why:'Один «особый» маршрут не похож на остальные, и результат нельзя перенести на город. Дана уговорила вас разделить маршруты на две группы.'}
+  ]);
+  const lanes=el('div','panel',`<div class="panel-h"><h3>Две группы маршрутов</h3><small>одно время, одна погода</small></div><div class="lanes">
+    <div class="lane"><label>A · контроль · раз в 40 мин</label>${busEl(0,9)}</div>
+    <div class="lane"><label>B · тест · раз в 12 мин</label>${busEl(0,3)}${busEl(1,3)}${busEl(2,3)}</div></div>`);
+  add(lanes);
+  await say('dana','Сколько будем тестировать? Учтите: каждый день — это примерно 190 поездок в обеих группах.');
+  const dur=await choices([
+    {t:'3 дня — быстро получим ответ',ok:false,d:3},
+    {t:'6 недель — как в гипотезе',ok:true,d:42},
+    {t:'6 месяцев — чтобы наверняка',ok:'mid',d:180}
+  ]);
+  const kindD=dur.ok===true?'ok':dur.ok==='mid'?'mid':'bad';const xpD=score(kindD,8);
+  const p=el('div','panel','<div class="panel-h"><h3>A/B-тест: доля доехавших к 9:00</h3><small id="abday">день 0</small></div>');
+  const cv=el('canvas','abc');p.appendChild(cv);
+  p.appendChild(el('div','abmeta',`<span><i class="legend" style="background:#9a98b0"></i>Контроль: <b id="abC">—</b></span><span><i class="legend" style="background:#ff5fa8"></i>Тест: <b id="abT">—</b></span><span>поездок: <b id="abN">0</b></span>`));
+  add(p);
+  const N=42,rg=(s=>()=>{s=(s*16807)%2147483647;return(s-1)/2147483646;})(9);const gauss=()=>{const u=rg()||.01,v=rg();return Math.sqrt(-2*Math.log(u))*Math.cos(6.283*v);};
+  const C=[],T=[];for(let d=1;d<=N;d++){const amp=.066/Math.sqrt(d);C.push(.36+gauss()*amp);T.push(.47+gauss()*amp+(d<=5?.14*(1-(d-1)/5):0));}
+  T[2]=Math.max(T[2],.6);for(let d=N-6;d<N;d++){C[d]=.36+(C[d]-.36)*.3;T[d]=.47+(T[d]-.47)*.3;}C[N-1]=.362;T[N-1]=.471;
+  const ctx=cv.getContext('2d');
+  function draw(n){const w=cv.clientWidth,h=cv.clientHeight,dp=Math.min(2,devicePixelRatio||1);cv.width=w*dp;cv.height=h*dp;ctx.setTransform(dp,0,0,dp,0,0);
+    const L=40,R=12,Tp=12,B=26,y=v=>Tp+(1-(v-.2)/.5)*(h-Tp-B),x=d=>L+(d-1)/(N-1)*(w-L-R);
+    ctx.font='600 12px "Golos Text",sans-serif';ctx.fillStyle='#56536e';ctx.lineWidth=1;
+    [.2,.3,.4,.5,.6,.7].forEach(v=>{ctx.strokeStyle='rgba(30,27,51,.12)';ctx.beginPath();ctx.moveTo(L,y(v));ctx.lineTo(w-R,y(v));ctx.stroke();ctx.fillText(Math.round(v*100)+'%',4,y(v)+4);});
+    [1,14,28,42].forEach(d=>ctx.fillText('день '+d,Math.min(x(d)-14,w-R-48),h-6));
+    ctx.setLineDash([6,5]);ctx.strokeStyle='#22b87a';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(L,y(.45));ctx.lineTo(w-R,y(.45));ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#168a5a';ctx.font='700 12px "Golos Text",sans-serif';ctx.fillText('цель 45%',L+6,y(.45)-6);
+    const line=(arr,col)=>{if(!n)return;ctx.lineJoin='round';ctx.lineCap='round';ctx.strokeStyle=INK;ctx.lineWidth=6;ctx.beginPath();for(let d=1;d<=n;d++){const X=x(d),Y=y(arr[d-1]);d===1?ctx.moveTo(X,Y):ctx.lineTo(X,Y);}ctx.stroke();ctx.strokeStyle=col;ctx.lineWidth=3;ctx.stroke();
+      ctx.beginPath();ctx.arc(x(n),y(arr[n-1]),5.5,0,7);ctx.fillStyle=col;ctx.fill();ctx.strokeStyle=INK;ctx.lineWidth=2.5;ctx.stroke();};
+    line(C,'#9a98b0');line(T,'#ff5fa8');}
+  draw(0);
+  await nextBtn('Запустить тест ▶','pinkb');
+  let stoppedAt=null;
+  for(let d=1;d<=N;d++){
+    draw(d);$('#abday').textContent=`день ${d}`;$('#abC').textContent=Math.round(C[d-1]*100)+'%';$('#abT').textContent=Math.round(T[d-1]*100)+'%';$('#abN').textContent='2 × '+fmt(d*96);
+    if(d===3){
+      if(dur.d===3){stoppedAt=3;break;}
+      await say('gromov',`Смотрите, тест уже ${Math.round(T[2]*100)}%! Всё ясно — останавливаем и запускаем по всему городу. Зачем людей мучить?`,'happy');
+      const pk=el('div','peek',`<b>Остановить тест сейчас?</b>`);const stop=el('button','btn redb','Остановить и масштабировать');const cont=el('button','btn ghost','Продолжить тест');pk.append(stop,cont);add(pk);
+      const r=await new Promise(res=>{stop.onclick=()=>res('stop');cont.onclick=()=>res('cont');});stop.disabled=cont.disabled=true;
+      if(r==='stop'){stoppedAt=3;break;}
+      await say('dana','Правильно. Три дня и пара сотен поездок — слишком мало, цифры пока прыгают.','happy');
+    }
+    await sleep(70);
+  }
+  if(stoppedAt){
+    S.flags.falsePositive=true;S.flags.buses=true;
+    await feedback({kind:'bad',xp:xpD,title:'Тест остановлен на третий день',text:'В первые дни данных мало, и цифры скачут. 61% на третий день — скорее случайность и эффект новизны, чем настоящий результат. Но решение принято: частые автобусы запускают по всему городу.',
+      lesson:'Не останавливай тест, когда результат «уже красивый». Решай по заранее заданному сроку и объёму выборки: ранние всплески часто оказываются шумом.',lessonTag:'Эксперимент'});
+    await newspaper(7,'Мэр раскатил новые интервалы по всему городу за один день','«Тест показал 61%!» — заявил Громов на пресс-конференции. Водители жалуются, что автобусов на все маршруты не хватает.');
+    return;
+  }
+  if(dur.d===180){await say('narr','Тест продлили ещё на 4 месяца. Цифры уже не менялись, а люди продолжали ждать автобус по 40 минут на остальных маршрутах.');apply({pop:-500,happy:-2},'bad');S.flags.slow=true;}
+  achieve('patient');S.flags.buses=true;apply({happy:3,pop:400},'ok');
+  await feedback({kind:kindD,xp:xpD,title:dur.d===42?'Тест доведён до конца':'Перестраховка стоила людей',text:dur.d===42?'6 недель, по 4 000 поездок в каждой группе. Контроль — 36%, тест — 47%. Последние три недели линии стабильны.':'Данных было достаточно ещё через 6 недель. Каждый лишний месяц ожидания — это люди, которые не дождались автобуса и уехали.',
+    lesson:'Длительность теста определяют заранее: она должна покрыть нужный объём данных и полный недельный цикл. Слишком короткий тест ловит шум, слишком длинный тратит время.',lessonTag:'Эксперимент'});
+  await say('narr','Тестовая группа: 47% против 36% в контроле, цель 45% перевыполнена. Что делаем?');
+  await quiz([
+    {t:'Масштабируем частые автобусы на все загруженные маршруты',ok:true,title:'Решение подтверждено',why:'Большая выборка, стабильный результат, цель перевыполнена. Можно катить.'},
+    {t:'Тестируем ещё, вдруг показалось',ok:false,title:'Сомнения без причины',why:'Результат стабилен и превысил цель. Новые проверки без новой гипотезы — просто откладывание решения.'},
+    {t:'Масштабируем, но только на маршруты у мэрии',ok:'mid',title:'Половинчато',why:'Эффект подтверждён на похожих маршрутах. Ограничивать его районом мэрии — выбор по удобству, а не по данным.'}
+  ]);
+  await newspaper(7,'Автобусы ходят каждые 12 минут! Очереди на остановках тают','Эксперимент мэрии подтвердил: доля жителей, которые вовремя добираются до работы, выросла с 36% до 47%. Громов назвал это «удачным совпадением».');
+}
+function busEl(i,dur){return `<svg class="bus" viewBox="0 0 52 22" style="animation-duration:${dur}s;animation-delay:-${i*dur/3}s"><rect x="1.5" y="1.5" width="49" height="15" rx="4" fill="#ffd21f" stroke="${INK}" stroke-width="2.5"/><rect x="6" y="4.5" width="7" height="5" rx="1" fill="#bfe6ff" stroke="${INK}" stroke-width="1.5"/><rect x="16" y="4.5" width="7" height="5" rx="1" fill="#bfe6ff" stroke="${INK}" stroke-width="1.5"/><rect x="26" y="4.5" width="7" height="5" rx="1" fill="#bfe6ff" stroke="${INK}" stroke-width="1.5"/><rect x="36" y="4.5" width="9" height="5" rx="1" fill="#bfe6ff" stroke="${INK}" stroke-width="1.5"/><circle cx="12" cy="18" r="3.3" fill="${INK}"/><circle cx="40" cy="18" r="3.3" fill="${INK}"/></svg>`;}
+
+async function ch7(){
+  chapterHead(7,9,S.flags.falsePositive?'Эффект испарился':'Утро нового города');
+  if(S.flags.falsePositive){
+    await say('dana','Прошло два месяца. Доля доехавших вовремя — 39%, а не 61%. Автобусов на все маршруты не хватило, интервалы поплыли. Мы потратили 10 млн на срочную аренду машин.','sad');
+    apply({budget:-10,trust:-4},'bad');
+    await say('gromov','Это водители виноваты! И погода. Тест же показал 61%!','angry');
+    await quiz([
+      {t:'Признать ошибку и провести нормальный A/B-тест на 6 недель',ok:true,fx:{trust:5,happy:2,pop:300},react:['dana','Спасибо. Через 6 недель увидим честный результат: тест подтвердил 47% против 36%.','happy'],
+        title:'Ошибиться не страшно — страшно упорствовать',why:'Перезапуск стоил времени, но дал честный ответ. Частые автобусы работают, просто эффект меньше, чем «показалось» на третий день.',lesson:'Ошибки в продукте случаются. Сильный продакт признаёт их быстро и возвращается к проверке, а не ищет виноватых.'},
+      {t:'Сказать прессе, что всё работает, и не трогать',ok:false,fx:{trust:-6,happy:-2},title:'Цифры всплывут',why:'Через месяц журналисты нашли данные Даны. Доверие к мэрии упало, а проблема осталась.'},
+      {t:'Наказать водителей — это они срывают интервалы',ok:false,fx:{trust:-5},title:'Не там ищете',why:'Водители не виноваты, что автобусов не хватило. Проблема в решении, принятом на шумных данных.'}
+    ]);
+    return;
+  }
+  scene(sceneCelebrate());
+  await say('vera','Господин мэр! Сегодня доехала до поликлиники за двадцать минут. Дочке позвонила — сказала, что пока не переезжаю.','happy');
+  await say('dana','Но есть нюанс. Через месяц после запуска метрика чуть снизилась: была 47%, стала 45%. Громов уже ходит по коридорам и говорит «я же предупреждал».','neutral');
+  await quiz([
+    {t:'Это эффект новизны: первые недели люди ездили охотнее из любопытства. 45% — всё ещё выше контроля и цели',ok:true,fx:{trust:3},title:'Спокойно, это норма',why:'После запуска многие метрики слегка откатываются, когда пропадает новизна. Важно, что результат стабилизировался выше цели.',lesson:'Эффект новизны: сразу после запуска метрики часто завышены. Оценивай стабильный уровень через несколько недель, а не пик.'},
+    {t:'Тест был ошибкой, надо всё откатить',ok:false,fx:{happy:-3},title:'Слишком резко',why:'45% — всё ещё значительно выше 36% в контроле. Откат вернул бы людей на остановки.'},
+    {t:'Надо срочно запустить рекламу автобусов',ok:'mid',title:'Не та проблема',why:'Реклама не нужна: люди уже ездят. Небольшой откат после запуска — нормальное явление.'}
+  ]);
+}
+
+async function ch8(){
+  chapterHead(8,10,'Красивый график и опасный вывод');
+  await say('dana','Нашла интересное: в районах, где больше парков, у жителей выше доходы. Вот 14 районов города:');
+  const pts=[[1.1,38],[1.4,41],[1.8,40],[2.2,47],[2.5,45],[2.9,52],[3.1,49],[3.6,58],[3.9,55],[4.3,63],[4.6,60],[5.0,68],[5.4,66],[5.9,74]];
+  const W=560,H=290,L=48,B=44,T=18,R=16,x=v=>L+(v-.5)/6*(W-L-R),y=v=>T+(1-(v-30)/50)*(H-T-B);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;min-width:380px;display:block" role="img" aria-label="Точечный график: парки и доход по 14 районам">`;
+  [30,40,50,60,70,80].forEach(v=>svg+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="#1e1b33" stroke-opacity=".12"/><text x="${L-8}" y="${y(v)+4}" fill="#56536e" font-size="12" font-weight="600" font-family="Golos Text" text-anchor="end">${v}</text>`);
+  [1,2,3,4,5,6].forEach(v=>svg+=`<text x="${x(v)}" y="${H-B+18}" fill="#56536e" font-size="12" font-weight="600" font-family="Golos Text" text-anchor="middle">${v}</text>`);
+  svg+=`<text x="${(W+L)/2}" y="${H-6}" fill="#1e1b33" font-size="13" font-weight="700" font-family="Golos Text" text-anchor="middle">Парков на 10 000 жителей</text><text x="${L}" y="${T-6}" fill="#1e1b33" font-size="13" font-weight="700" font-family="Golos Text">Доход, тыс./мес</text>`;
+  svg+=`<line x1="${x(1)}" y1="${y(37)}" x2="${x(6)}" y2="${y(73)}" stroke="#ff5fa8" stroke-width="3" stroke-dasharray="8 6" stroke-linecap="round"/>`;
+  pts.forEach((p,i)=>svg+=`<circle cx="${x(p[0])}" cy="${y(p[1])}" r="${reduce?8:0}" fill="#3d8bff" stroke="#1e1b33" stroke-width="2.5">${reduce?'':`<animate attributeName="r" from="0" to="8" dur=".35s" begin="${i*0.07}s" fill="freeze"/>`}</circle>`);
+  svg+='</svg>';
+  add(el('div','panel',`<div class="panel-h"><h3>Парки и доходы по районам</h3><small>14 районов</small></div><div style="overflow-x:auto">${svg}</div>`));await sleep(1000);
+  await say('gromov','Вот! Строим парки в бедных районах — и люди разбогатеют! Даже вы не поспорите, мэр, это же данные!','happy');
+  await quiz([
+    {t:'Громов прав: парки повышают доходы, строим',ok:false,flag:'park',fx:{budget:-10},react:['gromov','Наконец-то! Я всегда говорил, что зелень — это деньги.','happy'],title:'Корреляция — не причинность',why:'Вы потратили 10 млн на парк в рабочем районе. Доходы не изменились: обеспеченные районы просто чаще добивались парков, а не наоборот.'},
+    {t:'Это только связь. Возможно, обеспеченные районы сами добиваются парков. Нужна проверка',ok:true,react:['gromov','Опять эти ваши «нужна проверка»...','angry'],title:'Отличная хватка',why:'Связь может идти в обратную сторону, или обе цифры зависят от третьего фактора: возраста района, близости к центру, цен на жильё.',
+      lesson:'Корреляция — не причинность. Две цифры растут вместе? Спроси: а если наоборот? А если обе зависят от чего-то третьего? Причину доказывает эксперимент.'},
+    {t:'Данные врут, парки и деньги никак не связаны',ok:false,title:'Слишком резко',why:'Связь в данных есть. Просто она не доказывает, что одно вызывает другое. Отбрасывать данные — такая же ошибка, как верить им слепо.'}
+  ],{ach:'confound',hint:'Подумайте, что может быть причиной, а что следствием. И нет ли чего-то третьего, что влияет на обе цифры.'});
+  await say('dana','Быстрый вопрос на закрепление. Летом растут продажи мороженого и вызовы спасателей на пляж. Что их связывает?');
+  await quiz([
+    {t:'Мороженое мешает хорошо плавать',ok:false,title:'Не мороженое',why:'Если запретить мороженое, спасателей меньше вызывать не станут.'},
+    {t:'Жара: больше людей покупают мороженое и больше людей купается',ok:true,title:'Третий фактор',why:'Жара двигает обе метрики одновременно. Это классический скрытый фактор.'},
+    {t:'Спасатели покупают много мороженого',ok:false,title:'Забавно, но нет',why:'Связь не в спасателях, а в погоде.'}
+  ],{pts:6});
+}
+
+async function ch9(){
+  if(S.flags.wheel){
+    chapterHead(9,11,'Призраки прошлого: колесо');
+    scene(sceneWheel());
+    await say('timur','Колесо открыли. Загрузка — 12%, по будням оно крутится пустым. Содержание обходится в 6 млн в год.','sad');
+    await say('gromov','Нужно вложить ещё 15 млн в подсветку и аттракционы вокруг! Иначе выходит, что 40 млн мы выкинули на ветер.','angry');
+    await quiz([
+      {t:'Вкладываем 15 млн — нельзя, чтобы прошлые деньги пропали',ok:false,fx:{budget:-15},title:'Ловушка невозвратных затрат',why:'Подсветку сделали, загрузка выросла до 15%. Деньги, потраченные раньше, всё равно не вернулись, а новые ушли туда же.'},
+      {t:'40 млн уже потрачены при любом решении. Смотрим только на будущее: сдаём колесо в аренду оператору и экономим на содержании',ok:true,fx:{budget:6,trust:4},flag:'wheelRent',react:['gromov','Сдать моё колесо?! Ну... если оператор платит...','sad'],title:'Холодная голова',why:'Оператор взял колесо в аренду и сам занимается аттракционом. Город перестал тратить на содержание, бюджет получил 6 млн.',
+        lesson:'Невозвратные затраты — то, что уже потрачено и не вернётся. Они не должны влиять на решение. Сравнивай только будущие выгоды и будущие расходы.'},
+      {t:'Ничего не делаем, пусть стоит',ok:'mid',fx:{budget:-6},title:'Тихие потери',why:'Колесо продолжает съедать 6 млн в год. Бездействие — тоже решение, и тоже стоит денег.'}
+    ],{ach:'sunk'});
+    return;
+  }
+  chapterHead(9,11,'Призраки прошлого: график Громова');
+  await say('gromov','Мэр, у меня железные данные! В соседнем городе построили светомузыкальный фонтан — и туристов стало на 40% больше! Смотрите сами.','happy');
+  const months=['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+  const vals=[30,28,33,38,46,58,70,82,52,38,31,29];
+  const panel=el('div','panel',`<div class="panel-h"><h3>Туристы в соседнем городе, тыс.</h3><small>после открытия фонтана в мае</small></div>`);
+  const tog=el('div','toggle',`<button aria-pressed="true" data-v="g">Версия Громова</button><button aria-pressed="false" data-v="a">Весь год</button>`);
+  const chart=el('div','',`<div style="overflow-x:auto"></div>`);panel.append(tog,chart);add(panel);
+  function drawBars(all){const idx=all?months.map((_,i)=>i):[5,6,7];const W=560,H=230,L=36,B=30,T=14;const bw=(W-L-10)/idx.length;
+    let s=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:360px;height:auto;display:block">`;
+    [0,20,40,60,80].forEach(v=>{const yy=T+(1-v/90)*(H-T-B);s+=`<line x1="${L}" x2="${W-6}" y1="${yy}" y2="${yy}" stroke="#1e1b33" stroke-opacity=".12"/><text x="${L-6}" y="${yy+4}" font-size="12" font-family="Golos Text" font-weight="600" fill="#56536e" text-anchor="end">${v}</text>`;});
+    idx.forEach((m,k)=>{const v=vals[m],h=v/90*(H-T-B),xx=L+k*bw+bw*.15;s+=`<rect x="${xx}" y="${H-B-h}" width="${bw*.7}" height="${h}" rx="5" fill="${[5,6,7].includes(m)?'#ff5fa8':'#9fb5c9'}" stroke="#1e1b33" stroke-width="2.5"/><text x="${xx+bw*.35}" y="${H-10}" font-size="12" font-family="Golos Text" font-weight="700" fill="#1e1b33" text-anchor="middle">${months[m]}</text>`;});
+    s+='</svg>';chart.firstChild.innerHTML=s;}
+  drawBars(false);
+  let sawAll=false;tog.querySelectorAll('button').forEach(b=>b.onclick=()=>{const all=b.dataset.v==='a';if(all)sawAll=true;tog.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));drawBars(all);});
+  await say('narr','Переключите график на «Весь год» и решите, что не так с доводами Громова.');
+  await quiz([
+    {t:'Всё честно: +40% туристов, строим фонтан',ok:false,flag:'fountainPlan',react:['gromov','Наконец-то кто-то меня слушает!','happy'],title:'Купились на удобный кусок',why:'Июнь—август — сезон отпусков. Туристов летом много везде, с фонтаном или без. Осенью цифры вернулись к прежним.'},
+    {t:'Громов показал только лето. За весь год видно сезонность: осенью туристов столько же, сколько до фонтана',ok:true,react:['gromov','Ну... летом-то фонтан красивее...','sad'],title:'Поймали черри-пикинг',why:'Громов выбрал удобный отрезок графика. На полном периоде видно, что рост — это сезон, а не фонтан.',
+      lesson:'Черри-пикинг — когда показывают только удобный кусок данных. Всегда проси полный период и сравнение с тем же сезоном прошлого года.'},
+    {t:'Фонтаны в принципе бесполезны',ok:'mid',title:'Вывод шире данных',why:'Данные не говорят, что фонтаны бесполезны. Они говорят, что этот график не доказывает эффект.'}
+  ],{ach:'fullchart'});
+  if(!sawAll)await say('dana','Кстати, переключатель «Весь год» там не для красоты. Полный период — первое, о чём стоит попросить.','neutral');
+}
+
+async function ch10(){
+  chapterHead(10,13,'Бюджет на год: что строим?');
+  const budget=S.budget;
+  await say('dana',`На следующий год у нас ${budget} млн. Проектов больше, чем денег. Оценим их по RICE.`);
+  const why=[];if(S.flags.wheel)why.push('40 млн ушли на колесо обозрения');if(S.flags.park)why.push('10 млн — на парк из-за ложной корреляции');if(S.flags.falsePositive)why.push('10 млн — на исправление поспешного запуска');if(S.flags.wheelRent)why.push('зато аренда колеса принесла 6 млн');
+  if(why.length)await say('narr',`Бюджет изменился: ${why.join(', ')}.`);
+  add(el('div','panel',`<div class="panel-h"><h3>Как считать RICE</h3></div><div class="formula">RICE = Охват × Влияние × Уверенность ÷ Усилия</div><p class="cap">Охват — сколько жителей затронет за квартал. Влияние — от 0,5 до 3. Уверенность — насколько идея подтверждена данными. Усилия — месяцы работы.</p>`));
+  const P=[
+    {k:'buses2',n:'Новые автобусы на все маршруты',d:'Масштабируем подтверждённый тест.',R:30000,I:3,C:.8,E:4,cost:35,fx:{pop:2600,happy:7}},
+    {k:'yards',n:'Ремонт дворов и озеленение',d:'Жалоба №2 из интервью и обращений.',R:20000,I:1,C:.8,E:3,cost:25,fx:{pop:900,happy:5}},
+    {k:'bikes',n:'Сеть велодорожек',d:'Артём и студенты ездят на самокатах.',R:9000,I:2,C:.7,E:3,cost:20,fx:{pop:500,happy:3}},
+    {k:'it',n:'IT-парк для новых рабочих мест',d:'Нужны резиденты, гарантий нет.',R:6000,I:3,C:.5,E:8,cost:50,fx:{pop:1600,happy:2}},
+    {k:'fountain',n:'Светомузыкальный фонтан',d:'Любимая идея Громова.',R:5000,I:.5,C:.5,E:2,cost:30,fx:{happy:1}}
+  ];
+  if(!S.flags.wheel)P.push({k:'wheel',n:'Колесо обозрения',d:'Та самая идея из первого дня.',R:8000,I:1,C:.5,E:6,cost:40,fx:{happy:2}});
+  P.forEach(p=>p.rice=Math.round(p.R*p.I*p.C/p.E));
+  const wrap=el('div','panel');const bud=el('div','budget',`<div class="blabel"><span>Выбрано: <b id="bSel">0</b> млн</span><span>Бюджет: ${budget} млн</span></div><div class="btrack"><div class="bfill" id="bFill"></div></div>`);
+  const grid=el('div','projects');const sel=new Set();const row=el('div','row');const calc=el('button','btn ghost','Посчитать RICE');const confirmBtn=el('button','btn pinkb','Утвердить бюджет');confirmBtn.disabled=true;
+  function upd(){const s=[...sel].reduce((a,k)=>a+P.find(p=>p.k===k).cost,0);$('#bSel').textContent=s;const f=$('#bFill');f.style.width=Math.min(100,budget?s/budget*100:100)+'%';f.classList.toggle('over',s>budget);confirmBtn.disabled=s>budget||s===0;confirmBtn.textContent=s>budget?'Не хватает бюджета':'Утвердить бюджет';}
+  P.forEach(p=>{const c=el('button','proj',`<h4>${p.n}</h4><div class="d">${p.d}</div><div class="rice"><div><small>ОХВАТ</small><b>${p.R/1000}k</b></div><div><small>ВЛИЯН.</small><b>${String(p.I).replace('.',',')}</b></div><div><small>УВЕР.</small><b>${p.C*100}%</b></div><div><small>УСИЛ.</small><b>${p.E} мес</b></div></div><div class="pfoot"><span>${p.cost} млн</span><span class="score">RICE: ?</span></div>`);
+    c.setAttribute('aria-pressed','false');c.onclick=()=>{if(sel.has(p.k))sel.delete(p.k);else sel.add(p.k);c.setAttribute('aria-pressed',String(sel.has(p.k)));upd();};p.el=c;grid.appendChild(c);});
+  const showRice=()=>P.forEach((p,i)=>setTimeout(()=>{const s=p.el.querySelector('.score');s.textContent='RICE: '+fmt(p.rice);s.classList.add('shown');},reduce?0:i*120));
+  calc.onclick=()=>{calc.disabled=true;showRice();};row.append(calc,confirmBtn);wrap.append(bud,grid,row);add(wrap);
+  await say('narr','Отметьте проекты в пределах бюджета. Сначала можно нажать «Посчитать RICE».');
+  if(budget<20){await say('dana','Денег почти не осталось... Придётся пропустить этот год.','sad');}
+  else await new Promise(res=>confirmBtn.onclick=res);
+  confirmBtn.disabled=true;if(!calc.disabled){calc.disabled=true;showRice();}P.forEach(p=>p.el.disabled=true);
+  let best=0,bm=0;const n=P.length;for(let m=1;m<1<<n;m++){let c=0,r=0;for(let i=0;i<n;i++)if(m>>i&1){c+=P[i].cost;r+=P[i].rice;}if(c<=budget&&r>best){best=r;bm=m;}}
+  const optNames=P.filter((p,i)=>bm>>i&1).map(p=>p.n.toLowerCase()).join(', ');
+  const chosen=P.filter(p=>sel.has(p.k));const got=chosen.reduce((a,p)=>a+p.rice,0),ratio=best?got/best:0;
+  const fx={budget:-chosen.reduce((a,p)=>a+p.cost,0),pop:0,happy:0};chosen.forEach(p=>{fx.pop+=p.fx.pop||0;fx.happy+=p.fx.happy||0;S.flags[p.k]=true;});
+  const kind=ratio>.95?'ok':ratio>.6?'mid':'bad';const xp=score(kind,15);if(kind==='ok')achieve('rice');apply(fx,kind==='ok'?'ok':kind==='bad'?'bad':null);
+  await feedback({kind,xp,title:`Ваш план даёт ${Math.round(ratio*100)}% от максимальной ценности`,text:ratio>.95?'Вы собрали лучший портфель: максимум ценности за доступные деньги. Посмотрите на город — он строится.':`Лучший набор в этом бюджете: ${optNames}. Дорогие и неуверенные проекты съедают бюджет, а дают мало.`,
+    lesson:'RICE помогает сравнивать несравнимое. Недорогой проект с большим охватом и подтверждённым эффектом обычно выгоднее громкой стройки с низкой уверенностью.'});
+  const hl=S.flags.fountain?'В центре заработал фонтан. Горожане спрашивают, где дворы':S.flags.yards&&S.flags.bikes?'Во дворах — деревья, на улицах — велодорожки':S.flags.it?'Мэрия строит IT-парк. Резидентов пока ищут':'Мэрия утвердила бюджет года';
+  await newspaper(13,hl,'Бюджет утверждён на сессии городского совета. «Мэр ' + S.name + ' считает каждый рубль», — говорят в мэрии. Громов воздержался при голосовании.');
+}
+
+async function ch11(){
+  chapterHead(11,16,'Кризис в ленте');
+  await say('narr','Пятница, 23:40. Телефон разрывается. У вас 20 секунд, чтобы ответить журналистам, пока история не разлетелась.');
+  const ph=el('div','phone');const scr=el('div','screen');ph.appendChild(scr);add(ph);
+  const posts=[['Жители у депо','У автобусного депо грохот до двух ночи. Уже третий месяц!','1,2 тыс.'],['Водитель Сергей','Работаем по 12 часов, чтобы держать интервал 12 минут. Еле на ногах.','860'],['Инсайтград Live','Мэрия гордится автобусами, а что с людьми рядом с депо?','2,4 тыс.']];
+  for(const p of posts){await sleep(500);scr.appendChild(el('div','post',`<b>${p[0]}</b> <small>· только что</small><div>${p[1]}</div><div class="likes">♥ ${p[2]}</div>`));}
+  await say('dana','Главная метрика растёт: 61% → 68%. Но мы смотрели только на неё — и не заметили, что ломаем другое.','sad');
+  const timer=el('div','timer',`<span id="tsec">20</span><div class="tbar"><i id="tbarI"></i></div>`);add(timer);
+  const box=el('div','choices');const opts=[
+    {t:'Удалить негативные комментарии и выпустить позитивный пост',ok:false,fx:{trust:-8,happy:-3},title:'Эффект Стрейзанд',why:'Скриншоты удалённых комментариев разлетелись быстрее, чем сами комментарии. Доверие к мэрии упало.'},
+    {t:'Признать проблему, перенести ночные рейсы, нанять водителей и добавить в дашборд защитные метрики: шум и переработки',ok:true,fx:{trust:5,happy:3},title:'Защитные рамки',why:'Жалобы пошли вниз, водители получили сменщиков. А в дашборде теперь видно не только рост, но и цену роста.',
+      lesson:'Guardrail-метрики защищают от побочных эффектов: главная цифра растёт, а они следят, чтобы вы ничего не сломали по пути.'},
+    {t:'Ничего не делать: главная метрика растёт, это важнее',ok:false,fx:{trust:-6,happy:-4},title:'Рост любой ценой',why:'Жители у депо собрали петицию, водители пригрозили забастовкой. Рост, который ломает всё вокруг, долго не живёт.'}
+  ];
+  let resolve;const picked=new Promise(r=>resolve=r);
+  opts.forEach((o,i)=>{const b=el('button','choice',`<span class="key">${'ABC'[i]}</span><span>${o.t}</span>`);b.onclick=()=>resolve(o);box.appendChild(b);});
+  add(box);
+  let left=20;const bar=$('#tbarI');requestAnimationFrame(()=>{bar.style.width='100%';});
+  const iv=setInterval(()=>{left--;$('#tsec').textContent=Math.max(0,left);bar.style.width=Math.max(0,left/20*100)+'%';if(left<=0){clearInterval(iv);resolve(null);}},reduce?50:1000);
+  let o=await picked;clearInterval(iv);
+  [...box.children].forEach(c=>c.disabled=true);
+  if(!o){o={ok:false,fx:{trust:-7,happy:-3},title:'Время вышло',why:'Мэрия промолчала до утра. К утру историю подхватили все городские паблики, а водители пообещали забастовку.'};await say('narr','Вы не успели ответить.');}
+  else{const idx=opts.indexOf(o);box.children[idx].classList.add('picked',o.ok?'ok':'bad');if(!o.ok)box.children[1].classList.add('right');}
+  const kind=o.ok?'ok':'bad';const xp=score(kind,12);if(o.ok){achieve('cool');S.flags.crisisOk=true;}
+  apply(o.fx,kind==='ok'?'ok':'bad');
+  await feedback({kind,xp,title:o.title,text:o.why,lesson:o.lesson||'Guardrail-метрики защищают от побочных эффектов: главная цифра растёт, а они следят, чтобы вы ничего не сломали по пути.',lessonTag:'Кризис'});
+}
+
+async function ch12(){
+  chapterHead(12,20,'Средняя температура по больнице');
+  await say('dana','Ежегодный опрос: средняя удовлетворённость жизнью в городе — 71%. Громов уже готовит праздничный пресс-релиз.','happy');
+  await say('timur','Подождите. Давайте посмотрим по районам. Нажимайте на районы на карте.','neutral');
+  const D=[{n:'Центр',v:79,p:'M60 40 L190 30 L210 120 L80 140 Z',lx:135,ly:85},{n:'Северный',v:74,p:'M190 30 L330 25 L320 110 L210 120 Z',lx:262,ly:72},{n:'Заводской',v:72,p:'M80 140 L210 120 L230 210 L70 225 Z',lx:150,ly:178},{n:'Новый квартал',v:77,p:'M210 120 L320 110 L330 200 L230 210 Z',lx:272,ly:162},{n:'Заречье',v:41,p:'M420 40 L560 50 L550 220 L430 210 Z',lx:490,ly:135}];
+  const wrap=el('div','panel','<div class="panel-h"><h3>Удовлетворённость по районам</h3><small id="dseen">открыто 0 из 5</small></div>');
+  const mw=el('div','mapWrap');const map=el('div','map');
+  map.innerHTML=`<svg viewBox="0 0 600 260" role="img" aria-label="Карта районов Инсайтграда"><path d="M360 0 C 340 70 400 120 370 260 L 410 260 C 440 130 380 70 400 0 Z" fill="#7fc8ff" stroke="${INK}" stroke-width="3"/>
+    <text x="386" y="30" font-family="Golos Text" font-weight="700" font-size="12" fill="${INK}" transform="rotate(80 386 30)">р. Метричка</text>
+    <rect x="345" y="150" width="80" height="12" fill="#c9a37a" stroke="${INK}" stroke-width="2.5"/><path d="M360 146l8 20M410 146l-8 20" stroke="#f04a3a" stroke-width="3"/>
+    ${D.map((d,i)=>`<g class="d" data-i="${i}" tabindex="0" role="button" aria-label="${d.n}"><path d="${d.p}" fill="#ffffff" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><text x="${d.lx}" y="${d.ly}" text-anchor="middle" font-family="Rubik" font-weight="800" font-size="13" fill="${INK}">${d.n}</text><text class="dv" x="${d.lx}" y="${d.ly+20}" text-anchor="middle" font-family="Rubik" font-weight="900" font-size="16" fill="${INK}">?</text></g>`).join('')}</svg>`;
+  const list=el('div','dlist');const seen=new Set();let resolveSeen;const allSeen=new Promise(r=>resolveSeen=r);
+  function open(i){const d=D[i];if(seen.has(i))return;seen.add(i);const g=map.querySelector(`.d[data-i="${i}"]`);g.querySelector('path').setAttribute('fill',d.v<50?'#ff9a8f':d.v<75?'#ffe58a':'#9be08a');g.querySelector('.dv').textContent=d.v+'%';
+    const b=list.children[i];b.classList.add('seen',d.v<50?'low':d.v<75?'midd':'hi');b.querySelector('em').textContent=d.v+'%';$('#dseen').textContent=`открыто ${seen.size} из 5`;if(seen.size>=5)resolveSeen();}
+  D.forEach((d,i)=>{const b=el('button','dbtn',`<span>${d.n}</span><em>?</em>`);b.onclick=()=>open(i);list.appendChild(b);});
+  map.querySelectorAll('.d').forEach(g=>{g.addEventListener('click',()=>open(+g.dataset.i));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open(+g.dataset.i);}});});
+  mw.append(map,list);wrap.appendChild(mw);add(wrap);
+  const skip=el('button','btn ghost','Хватит, всё понятно');add(skip);
+  await Promise.race([allSeen,new Promise(r=>skip.onclick=r)]);skip.remove();
+  await say('vera','Моя подруга живёт в Заречье. Мост на ремонте второй год, автобусы туда не ходят. Они там как будто не в нашем городе.','sad');
+  await quiz([
+    {t:'71% — отличный результат, выпускаем пресс-релиз',ok:false,fx:{happy:-2},react:['gromov','Вот! Наконец-то разумное решение.','happy'],title:'Среднее спрятало проблему',why:'Пресс-релиз вышел, а Заречье продолжило пустеть. Жители района назвали его «издевательством».'},
+    {t:'Среднее скрыло отстающий сегмент. Нужен отдельный план для Заречья: временный автобус через объездной мост',ok:true,fx:{pop:700,happy:3,budget:-5},flag:'zarechie',title:'Сегмент найден',why:'Временный маршрут через объездной мост запустили за месяц. Удовлетворённость в Заречье выросла с 41% до 63%.',
+      lesson:'Средние значения прячут сегменты. Всегда разбивай метрику по группам пользователей: районам, возрасту, каналам. Проблема часто живёт в одном сегменте.'},
+    {t:'Заречье — выброс. Исключим его из отчёта, чтобы не портил картину',ok:false,fx:{trust:-5},title:'Неудобные данные — тоже данные',why:'Исключать «плохие» сегменты из отчёта — самообман. Журналисты нашли полную таблицу через неделю.'}
+  ],{ach:'segment',hint:'Посмотрите, нет ли района, который сильно отличается от остальных. Почему так может быть?'});
+  await newspaper(20,S.flags.zarechie?'В Заречье пошёл автобус! «Наконец-то мы снова в городе»':'Мэрия отчиталась о 71% довольных. В Заречье не согласны',S.flags.zarechie?'Временный маршрут через объездной мост соединил район с центром. До выборов — четыре месяца.':'Жители Заречья собрали подписи за отставку мэра. До выборов — четыре месяца.');
+}
+
+async function election(){
+  chapterHead(13,24,'Ночь выборов');
+  scene(sceneElection());
+  const approval=Math.max(22,Math.min(82,20+S.happy*.35+S.trust*.18+(S.pop-48000)/400+(S.flags.zarechie?4:0)+(S.flags.crisisOk?3:0)-(S.flags.falsePositive?3:0)-(S.flags.wheel&&!S.flags.wheelRent?3:0)));
+  S.approval=approval;
+  await say('gromov',approval>=50?'Я выдвинулся против вас, мэр. Но, честно говоря, автобусы — это было неплохо.':'Я выдвинулся против вас, мэр. Город устал от ваших таблиц!',approval>=50?'neutral':'happy');
+  await say('narr','Избирательные участки закрыты. Идёт подсчёт голосов по районам…');
+  const race=el('div','panel race',`<div class="cand"><div class="ava">${faceSvg(MAYORS[S.av],'neutral')}</div><div><small>Мэр ${nm()}</small><div class="tr"><i id="rA" style="background:#22b87a"></i></div></div><b id="rAv">0%</b></div>
+    <div class="cand"><div class="ava">${faceSvg(PEOPLE.gromov.f,'neutral')}</div><div><small>Громов</small><div class="tr"><i id="rB" style="background:#f04a3a"></i></div></div><b id="rBv">0%</b></div><div class="cap" id="rDist">Подсчитано районов: 0 из 5</div>`);
+  add(race);
+  const dists=['Центр','Северный','Заводской','Новый квартал','Заречье'];let sumA=0;
+  for(let i=0;i<5;i++){await sleep(900);const shift=i===4?(S.flags.zarechie?6:-18):[3,1,-2,2,0][i];const a=Math.max(10,Math.min(90,approval+shift));sumA+=a;
+    const avg=sumA/(i+1);$('#rA').style.width=avg+'%';$('#rB').style.width=(100-avg)+'%';$('#rAv').textContent=Math.round(avg)+'%';$('#rBv').textContent=Math.round(100-avg)+'%';
+    $('#rDist').textContent=`Подсчитано районов: ${i+1} из 5 · ${dists[i]}: ${Math.round(a)}% за мэра`;}
+  S.final=sumA/5;await sleep(600);
+}
+
+async function finale(){
+  setChapter(13,24);clearStage();
+  const v=S.final;const win=v>=50;
+  const E=v>=62?{t:'Триумф: второй срок',d:`Инсайтград проголосовал за вас уверенно — ${Math.round(v)}%. Люди возвращаются, на остановках не ждут, а Громов попросился к Дане в стажёры.`}
+    :v>=50?{t:'Второй срок — с трудом',d:`${Math.round(v)}% — победа, но впритык. Город стал лучше, однако несколько решений стоили вам доверия. Есть что улучшить.`}
+    :v>=42?{t:'Проигрыш во втором туре',d:`${Math.round(v)}% — не хватило совсем немного. Громов победил с лозунгом «Без таблиц». Но вы точно знаете, где ошиблись.`}
+    :{t:'Мэр Громов',d:`${Math.round(v)}% — город выбрал Громова. Первым указом он заказал второе колесо обозрения. Пройдите ещё раз и дайте слово данным.`};
+  if(win)achieve('reelected');
+  city.fireworks(win?10:2);if(win)city.confetti(80);
+  const acc=S.total?Math.round(S.correct/S.total*100):0;const lvl=LEVELS[levelOf(S.xp)].n;
+  try{const prev=localStorage.getItem('mayor-best-v2');const pv=prev?parseInt(prev,10):-1;if(Math.round(v)>=pv)localStorage.setItem('mayor-best-v2',`${Math.round(v)}% голосов · ${lvl}`);}catch(e){}
+  const f=el('div','final');
+  f.appendChild(el('div','ending',`<div class="scene">${sceneEnding(win)}</div><div class="inner"><span class="eyebrow">Концовка</span><h2>${E.t}</h2><p>${E.d}</p></div>`));
+  f.appendChild(el('div','statgrid',`
+    <div class="cmp"><small>Уровень продакта</small><div><b>${lvl}</b></div></div>
+    <div class="cmp"><small>Решения по данным</small><div><b>${acc}%</b> · ${S.xp} XP</div></div>
+    <div class="cmp"><small>Лучшая серия</small><div><b>×${S.bestStreak}</b></div></div>
+    <div class="cmp"><small>Жители</small><div>48 000 → <b>${fmt(S.pop)}</b></div></div>
+    <div class="cmp"><small>Счастье</small><div>52% → <b>${Math.round(S.happy)}%</b></div></div>
+    <div class="cmp"><small>Доверие</small><div>50 → <b>${Math.round(S.trust)}</b></div></div>`));
+  f.appendChild(el('h3','',`Достижения: ${S.ach.length} из ${Object.keys(ACH).length}`));
+  const bg=el('div','badges');Object.keys(ACH).forEach(id=>{const a=ACH[id];bg.appendChild(el('div','badge'+(S.ach.includes(id)?'':' locked'),`${badgeSvg(id)}<div><b>${a.n}</b><small>${a.d}</small></div>`));});f.appendChild(bg);
+  f.appendChild(el('h3','','Что вы прокачали'));
+  const ls=el('div','lessons');S.lessons.forEach(l=>ls.appendChild(el('div','',`<small>${l.tag}</small><span>${l.text}</span>`)));f.appendChild(ls);
+  f.appendChild(el('div','cta-sr',`<span class="eyebrow">Skill Route · школа продактов</span><h3>Принимайте такие решения не в игре, а в реальном продукте</h3>
+    <p>Метрики, интервью, гипотезы, A/B-тесты и приоритизация — база профессии продакт-менеджера. В Skill Route её разбирают на живых кейсах с практиками, а в конце у вас портфолио и понятный путь в профессию.</p>
+    <div class="row"><a class="btn" href="https://t.me/skillroute1_bot" target="_blank" rel="noopener">Записаться на курс →</a><a class="btn ghost" href="https://t.me/product_vibe_it" target="_blank" rel="noopener">Telegram-канал</a><a class="btn ghost" href="https://instagram.com/skill.route" target="_blank" rel="noopener">Instagram</a></div>
+    <p style="font-size:14px">Напишите боту @skillroute1_bot слово «МЭР» — расскажем про программу и подберём поток.</p>`));
+  const again=el('button','btn pinkb big','Пройти ещё раз');again.onclick=()=>{const keep={name:S.name,av:S.av};S=fresh();Object.assign(S,keep);renderHud();run(true);};f.appendChild(again);
+  f.appendChild(el('div','foot','<a class="sr" href="https://instagram.com/skill.route" target="_blank" rel="noopener"><span class="sr-mark">SR</span><span class="t">Сделано в Skill Route</span></a>'));
+  add(f);window.scrollTo({top:0});
+}
+
+function measureTop(){const t=$('#top');document.documentElement.style.setProperty('--topH',(getComputedStyle(t).position==='sticky'?t.offsetHeight:0)+'px');}
+new ResizeObserver(measureTop).observe($('#top'));
+async function run(skipIntro){
+  if(!skipIntro)await intro();
+  for(const sc of [ch1,ch2,ch3,ch4,ch5,ch6,ch7,ch8,ch9,ch10,ch11,ch12,election])await sc();
+  await finale();
+}
+S=fresh();renderHud();run(false);
+})();
+</script>
+</body>
+</html>
